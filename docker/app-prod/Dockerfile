@@ -1,4 +1,10 @@
-FROM ubuntu:latest
-LABEL authors="ramin"
+FROM golang:1.20.5-alpine3.8
 
-ENTRYPOINT ["top", "-b"]
+ARG SERVICE
+
+RUN mkdir /internal
+COPY . /internal
+WORKDIR /internal/$SERVICE
+RUN go build -o /app .
+
+CMD ["/app"]
