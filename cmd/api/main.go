@@ -4,9 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"time"
+
+	"github.com/labstack/echo/v4"
 )
 
 var version = "1.0.0"
@@ -34,18 +35,15 @@ func main() {
 		logger: logger,
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", app.healthCheckHandler)
+	e := echo.New()
+	e.Server.IdleTimeout = time.Minute
+	e.Server.ReadTimeout = time.Second * 15
+	e.Server.WriteTimeout = time.Second * 30
 
-	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.port),
-		Handler:      mux,
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  time.Second * 15,
-		WriteTimeout: time.Second * 30,
-	}
+	e.GET("/health", app.healthHandler)
 
-	logger.Printf("Starting %s server on %s", cfg.env, srv.Addr)
-	err := srv.ListenAndServe()
-	logger.Fatal(err)
+	addr := fmt.Sprintf(":%d", cfg.port)
+	e.Logger.Debug("Starting %s server on %s", cfg.env, addr)
+	err := e.Start(addr)
+	e.Logger.Fatal(err)
 }
