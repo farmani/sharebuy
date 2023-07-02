@@ -11,7 +11,7 @@ func (app *application) loginHandler(c echo.Context) error {
 		Status: "OK",
 		Code:   200,
 		Data: map[string]interface{}{
-			"env":     app.config.env,
+			"env":     app.config.App.Env,
 			"version": version,
 		},
 	}
@@ -24,7 +24,7 @@ func (app *application) logoutHandler(c echo.Context) error {
 		Status: "OK",
 		Code:   200,
 		Data: map[string]interface{}{
-			"env":     app.config.env,
+			"env":     app.config.App.Env,
 			"version": version,
 		},
 	}
@@ -37,7 +37,7 @@ func (app *application) forgetPasswordStartHandler(c echo.Context) error {
 		Status: "OK",
 		Code:   200,
 		Data: map[string]interface{}{
-			"env":     app.config.env,
+			"env":     app.config.App.Env,
 			"version": version,
 		},
 	}
@@ -50,7 +50,7 @@ func (app *application) forgetPasswordFinishHandler(c echo.Context) error {
 		Status: "OK",
 		Code:   200,
 		Data: map[string]interface{}{
-			"env":     app.config.env,
+			"env":     app.config.App.Env,
 			"version": version,
 		},
 	}
@@ -63,7 +63,7 @@ func (app *application) changePasswordHandler(c echo.Context) error {
 		Status: "OK",
 		Code:   200,
 		Data: map[string]interface{}{
-			"env":     app.config.env,
+			"env":     app.config.App.Env,
 			"version": version,
 		},
 	}
@@ -76,7 +76,7 @@ func (app *application) registerStartHandler(c echo.Context) error {
 		Status: "OK",
 		Code:   200,
 		Data: map[string]interface{}{
-			"env":     app.config.env,
+			"env":     app.config.App.Env,
 			"version": version,
 		},
 	}
@@ -89,7 +89,7 @@ func (app *application) registerFinishHandler(c echo.Context) error {
 		Status: "OK",
 		Code:   200,
 		Data: map[string]interface{}{
-			"env":     app.config.env,
+			"env":     app.config.App.Env,
 			"version": version,
 		},
 	}

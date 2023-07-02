@@ -11,7 +11,7 @@ func (app *application) meHandler(c echo.Context) error {
 		Status: "OK",
 		Code:   200,
 		Data: map[string]interface{}{
-			"env":     app.config.env,
+			"env":     app.config.App.Env,
 			"version": version,
 		},
 	}
