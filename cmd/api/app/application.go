@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -15,36 +15,40 @@ import (
 	"github.com/farmani/sharebuy/internal/data"
 	"github.com/farmani/sharebuy/internal/jsonlog"
 	"github.com/farmani/sharebuy/internal/mailer"
+	"github.com/go-redis/redis"
 	"github.com/labstack/echo/v4"
 	"github.com/nats-io/nats.go"
-	"github.com/redis/go-redis/v9"
 )
 
-type application struct {
-	config config.Config
-	logger *jsonlog.Logger
-	models data.Models
-	mailer mailer.Mailer
-	wg     sync.WaitGroup
-	db     *sql.DB
-	redis  *redis.Client
-	nats   *nats.Conn
+type Application struct {
+	Config   config.Config
+	Logger   *jsonlog.Logger
+	Handlers []Handler
+	Services map[string]Service
+	Models   data.Models
+	Mailer   mailer.Mailer
+	Wg       sync.WaitGroup
+	Db       *sql.DB
+	Redis    *redis.Client
+	Nats     *nats.Conn
 }
 
-func NewApiApplication(cfg config.Config) *application {
-	return &application{
-		config: cfg,
-	}
+func NewApiApplication(cfg config.Config) (*Application, error) {
+	return &Application{
+		Config: cfg,
+	}, nil
 }
 
-func (app *application) serve() error {
+func (app *Application) Start() error {
 	e := echo.New()
 	e.Server.IdleTimeout = time.Minute
 	e.Server.ReadTimeout = time.Second * 15
 	e.Server.WriteTimeout = time.Second * 30
-	app.routes(e)
+	for _, handler := range app.Handlers {
+		handler.RegisterRoutes(e)
+	}
 
-	addr := fmt.Sprintf(":%d", app.config.App.Port)
+	addr := fmt.Sprintf(":%d", app.Config.App.Port)
 
 	shutdownError := make(chan error)
 	// Start a background goroutine.
@@ -61,7 +65,7 @@ func (app *application) serve() error {
 		// Log a message to say we caught the signal. Notice that we also call the
 		// String() method on the signal to get the signal name and include it in the log
 		// entry properties.
-		app.logger.PrintInfo("caught signal", map[string]string{
+		app.Logger.PrintInfo("caught signal", map[string]string{
 			"signal": s.String(),
 		})
 
@@ -78,22 +82,22 @@ func (app *application) serve() error {
 		}
 		// Log a message to say that we're waiting for any background goroutines to complete
 		// their tasks.
-		app.logger.PrintInfo("completing background tasks", map[string]string{
+		app.Logger.PrintInfo("completing background tasks", map[string]string{
 			"addr": e.Server.Addr,
 		})
 
 		// Call Wait() to block until our WaitGroup counter is zero. This essentially blocks
 		// until the background goroutines have finished. Then we return nil on the shutdownError
 		// channel to indicate that the shutdown as compleeted without any issues.
-		app.wg.Wait()
+		app.Wg.Wait()
 		shutdownError <- nil
 
 	}()
 
 	// Log a "starting server" message.
-	app.logger.PrintInfo("starting server", map[string]string{
+	app.Logger.PrintInfo("starting server", map[string]string{
 		"addr": e.Server.Addr,
-		"env":  app.config.App.Env,
+		"env":  app.Config.App.Env,
 	})
 
 	// Calling Shutdown() on our server will cause ListenAndServer() to immediately
@@ -101,7 +105,7 @@ func (app *application) serve() error {
 	// and an indication that the graceful shutdown has started. So, we specifically check for this,
 	// only returning the error if it is NOT http.ErrServerClosed.
 
-	e.Logger.Debug("Starting %s server on %s", app.config.App.Env, e.Server.Addr)
+	e.Logger.Debug("Starting %s server on %s", app.Config.App.Env, e.Server.Addr)
 	if err := e.Start(addr); err != nil && err != http.ErrServerClosed {
 		e.Logger.Fatal(err)
 	}
@@ -116,7 +120,7 @@ func (app *application) serve() error {
 
 	// At this point we know that the graceful shutdown completed successfully, and we log
 	// a "stopped server" message.
-	app.logger.PrintInfo("Stopped server", map[string]string{
+	app.Logger.PrintInfo("Stopped server", map[string]string{
 		"addr": e.Server.Addr,
 	})
 

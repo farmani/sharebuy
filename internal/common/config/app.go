@@ -1,6 +1,7 @@
 package config
 
 type App struct {
-	Port int
-	Env  string
+	Port    int
+	Env     string
+	Version string
 }

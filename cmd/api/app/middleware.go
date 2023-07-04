@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"expvar"
@@ -14,15 +14,15 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
-func (app *application) bundleMiddleware(e *echo.Echo) {
-	e.Logger.SetLevel(log.DEBUG)
+func (app *Application) bundleMiddleware(e *echo.Echo) {
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
 		StackSize: 1 << 10, // 1 KB
 		LogLevel:  log.ERROR,
 	}))
+	e.Use(middleware.RequestID())
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "method=${method}, uri=${uri}, status=${status}\n",
+		Format: "${time_rfc3339}, IP=${remote_ip}, id=${id}, method=${method}, uri=${uri}, status=${status}, latency=${latency_human}\n",
 	}))
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
@@ -63,13 +63,13 @@ func (app *application) bundleMiddleware(e *echo.Echo) {
 		},
 		Limit: "2M",
 	}))
-	//e.Validator = NewValidator()
+	// e.Validator = NewValidator()
 
 }
 
 // enableCORS sets the Vary: Origin and Access-Control-Allow-Origin response headers in order to
 // enabled CORS for trusted origins.
-func (app *application) enableCORS(next http.Handler) http.Handler {
+func (app *Application) enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Add the "Vary: Origin" header.
 		w.Header().Set("Vary", "Origin")
@@ -85,8 +85,8 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 			// Loop through the list of trusted origins, checking to see if the request
 			// origin exactly matches one of them. If there are no trusted origins, then the
 			// loop won't be iterated.
-			for i := range app.config.Cors.TrustedOrigins {
-				if origin == app.config.Cors.TrustedOrigins[i] {
+			for i := range app.Config.Cors.TrustedOrigins {
+				if origin == app.Config.Cors.TrustedOrigins[i] {
 					// If there is a match, then set an "Access-Control-Allow-Origin" response
 					// header with the request origin as the value and break out of the loop.
 					w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -117,7 +117,7 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 	})
 }
 
-func (app *application) metrics(next http.Handler) http.Handler {
+func (app *Application) metrics(next http.Handler) http.Handler {
 	// Initialize the new expvar variables when middleware chain is first build.
 	totalRequestsReceived := expvar.NewInt("total_requests_received")
 	totalResponsesSent := expvar.NewInt("total_responses_sent")

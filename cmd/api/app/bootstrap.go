@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -7,15 +7,15 @@ import (
 	"os"
 	"time"
 
-	"github.com/nats-io/nats.go"
-
 	"github.com/farmani/sharebuy/internal/jsonlog"
-	"github.com/redis/go-redis/v9"
+	"github.com/go-redis/redis"
+	_ "github.com/lib/pq"
+	"github.com/nats-io/nats.go"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
-func (app *application) bootstrap() error {
-	app.logger = jsonlog.NewLogger(os.Stdout, jsonlog.LevelInfo)
+func (app *Application) Bootstrap() error {
+	app.Logger = jsonlog.NewLogger(os.Stdout, jsonlog.LevelInfo)
 
 	err := app.openDB()
 	if err != nil {
@@ -35,7 +35,7 @@ func (app *application) bootstrap() error {
 	return nil
 }
 
-func (app *application) openNats() error {
+func (app *Application) openNats() error {
 	nc, err := nats.Connect(
 		nats.DefaultURL,
 		nats.Timeout(5*time.Second),
@@ -57,20 +57,20 @@ func (app *application) openNats() error {
 		return err
 	}
 
-	app.nats = nc
+	app.Nats = nc
 
 	return nil
 }
 
-func (app *application) openDB() error {
-	db, err := sql.Open("mysql", app.config.Db.Dsn)
+func (app *Application) openDB() error {
+	db, err := sql.Open("mysql", app.Config.Db.Dsn)
 	if err != nil {
 		return err
 	}
 
-	db.SetMaxOpenConns(app.config.Db.MaxOpenConns)
-	db.SetMaxIdleConns(app.config.Db.MaxIdleConns)
-	duration, err := time.ParseDuration(app.config.Db.MaxIdleTime)
+	db.SetMaxOpenConns(app.Config.Db.MaxOpenConns)
+	db.SetMaxIdleConns(app.Config.Db.MaxIdleConns)
+	duration, err := time.ParseDuration(app.Config.Db.MaxIdleTime)
 	if err != nil {
 		return err
 	}
@@ -87,45 +87,45 @@ func (app *application) openDB() error {
 
 	boil.SetDB(db)
 
-	app.db = db
+	app.Db = db
 
-	err = app.db.Ping()
+	err = app.Db.Ping()
 	if err != nil {
 		return err
 	}
 
-	app.logger.PrintInfo("database connection pool established", nil)
+	app.Logger.PrintInfo("database connection pool established", nil)
 
 	return nil
 }
 
-func (app *application) openRedis() error {
-	app.redis = redis.NewClient(&redis.Options{
-		Addr:     app.config.Redis.Addr,
-		Password: app.config.Redis.Password, // no password set
-		DB:       app.config.Redis.Db,       // use default DB
+func (app *Application) openRedis() error {
+	app.Redis = redis.NewClient(&redis.Options{
+		Addr:     app.Config.Redis.Addr,
+		Password: app.Config.Redis.Password, // no password set
+		DB:       app.Config.Redis.Db,       // use default DB
 	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// defer cancel()
 
-	app.redis.Ping(ctx)
+	app.Redis.Ping()
 
 	return nil
 }
 
-func (app *application) Shutdown() error {
-	err := app.db.Close()
+func (app *Application) Shutdown() error {
+	err := app.Db.Close()
 	if err != nil {
 		return err
 	}
 
-	err = app.redis.Close()
+	err = app.Redis.Close()
 	if err != nil {
 		return err
 	}
 
-	app.nats.Close()
+	app.Nats.Close()
 
 	return nil
 }

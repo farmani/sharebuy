@@ -63,7 +63,7 @@ func (l *Logger) PrintError(err error, properties map[string]string) {
 	l.print(LevelError, err.Error(), properties)
 }
 
-// PrintFatal is a helper that writes Info level log entries. It also terminates the application.
+// PrintFatal is a helper that writes Info level log entries. It also terminates the app.
 func (l *Logger) PrintFatal(err error, properties map[string]string) {
 	l.print(LevelFatal, err.Error(), properties)
 	os.Exit(1)
