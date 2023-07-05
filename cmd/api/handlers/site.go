@@ -4,18 +4,21 @@ import (
 	"net/http"
 
 	"github.com/farmani/sharebuy/cmd/api/app"
+	"github.com/farmani/sharebuy/cmd/api/services"
 	echoPrometheus "github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 )
 
 type SiteHandler struct {
 	// Dependencies or state for the UserHandler
-	app *app.Application
+	app         *app.Application
+	siteService *services.SiteService
 }
 
-func NewSiteHandler(a *app.Application) *SiteHandler {
+func NewSiteHandler(a *app.Application, s *services.SiteService) *SiteHandler {
 	return &SiteHandler{
-		app: a,
+		app:         a,
+		siteService: s,
 	}
 }
 

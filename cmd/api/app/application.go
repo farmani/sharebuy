@@ -24,7 +24,6 @@ type Application struct {
 	Config   config.Config
 	Logger   *jsonlog.Logger
 	Handlers []Handler
-	Services map[string]Service
 	Models   data.Models
 	Mailer   mailer.Mailer
 	Wg       sync.WaitGroup

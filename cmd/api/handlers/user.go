@@ -1,20 +1,24 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/farmani/sharebuy/cmd/api/app"
+	"github.com/farmani/sharebuy/cmd/api/services"
 	"github.com/labstack/echo/v4"
 )
 
 type UserHandler struct {
 	// Dependencies or state for the UserHandler
 	app *app.Application
+	userService *services.UserService
 }
 
-func NewUserHandler(a *app.Application) *UserHandler {
+func NewUserHandler(a *app.Application, u *services.UserService) *UserHandler {
 	return &UserHandler{
 		app: a,
+		userService: u,
 	}
 }
 
@@ -30,15 +34,41 @@ func (h *UserHandler) RegisterRoutes(e *echo.Echo) {
 }
 
 func (h *UserHandler) RegisterStart(c echo.Context) error {
-	// us := h.app.GetService("UserService").(*services.UserService)
-	// err := us.RegisterStart(c)
+	// Create an anonymous struct to hold the expected data from the request body.
+	var input struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	err := s.app.ReadJSON(c, &input)
+	if err != nil {
+		badRequestResponse(w, r, err)
+		return
+	}
+
+
+	v := validator.New()
+
+	// Validate the user struct and return the error messages to the client if
+	// any of the checks fail.
+	if data.ValidateUser(v, user); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	us := h.app.GetService("UserService").(*services.UserService)
+	user, err := us.RegisterStart(c)
+	if err != nil {
+		return failedValidationResponse(c, errors.New("failed to register user"))
+	}
+
+	}
 	// us.RegisterStart(c)
 	res := app.Envelope{
 		Status: "OK",
 		Code:   200,
 		Data: map[string]interface{}{
-			"env":     h.app.Config.App.Env,
-			"version": h.app.Config.App.Version,
+			"user": user,
 		},
 	}
 

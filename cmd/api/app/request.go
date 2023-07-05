@@ -16,9 +16,9 @@ import (
 
 // readIDParam reads interpolated "id" from request URL and returns it and nil. If there is an error
 // it returns and 0 and an error.
-func (app *Application) readIDParam(c echo.Context) (int64, error) {
+func (app *Application) ReadIDParam(c echo.Context) (int64, error) {
 	// Parse the id param from the URL
-	id, err := strconv.ParseInt(c.QueryParam("id"), 10, 64)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil || id < 1 {
 		return 0, errors.New("invalid id parameter")
 	}
@@ -28,7 +28,7 @@ func (app *Application) readIDParam(c echo.Context) (int64, error) {
 
 // writeJSON marshals data structure to encoded JSON response. It returns an error if there are
 // any issues, else error is nil.
-func (app *Application) writeJSON(w http.ResponseWriter, status int, data Envelope,
+func (app *Application) WriteJSON(w http.ResponseWriter, status int, data Envelope,
 	headers http.Header) error {
 	// Use the json.MarshalIndent() function so that whitespace is added to the encoded JSON. Use
 	// no line prefix and tab indents for each element.
@@ -62,7 +62,7 @@ func (app *Application) writeJSON(w http.ResponseWriter, status int, data Envelo
 
 // readJSON decodes request Body into corresponding Go type. It triages for any potential errors
 // and returns corresponding appropriate errors.
-func (app *Application) readJSON(c echo.Context, dst interface{}) error {
+func (app *Application) ReadJSON(c echo.Context, dst interface{}) error {
 	w := c.Response().Writer
 	r := c.Request()
 
@@ -161,7 +161,7 @@ func (app *Application) readJSON(c echo.Context, dst interface{}) error {
 
 // readString is a helper method on Application type that returns a string value from the URL query
 // string, or the provided default value if no matching key is found.
-func (app *Application) readStrings(qs url.Values, key string, defaultValue string) string {
+func (app *Application) ReadStrings(qs url.Values, key string, defaultValue string) string {
 	// Extract the value for a given key from the URL query string.
 	// If no key exists this will return an empty string "".
 	s := qs.Get(key)
@@ -178,7 +178,7 @@ func (app *Application) readStrings(qs url.Values, key string, defaultValue stri
 // readCSV is a helper method on Application type that reads a string value from the URL query
 // string and then splits it into a slice on the comma character. If no matching key is found
 // then it returns the provided default value.
-func (app *Application) readCSV(qs url.Values, key string, defaultValue []string) []string {
+func (app *Application) ReadCSV(qs url.Values, key string, defaultValue []string) []string {
 	// Extract the value from the URL query string
 	csv := qs.Get(key)
 
@@ -195,7 +195,7 @@ func (app *Application) readCSV(qs url.Values, key string, defaultValue []string
 // string and converts it to an integer before returning. If no matching key is found then it
 // returns the provided default value. If the value couldn't be converted to an integer, then we
 // record an error message in the provided Validator instance, and return the default value.
-func (app *Application) readInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+func (app *Application) ReadInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
 	// Extract the value from the URL query string.
 	s := qs.Get(key)
 
@@ -218,7 +218,7 @@ func (app *Application) readInt(qs url.Values, key string, defaultValue int, v *
 
 // background is a helper that accepts an arbitrary function as a parameter and runs it in a
 // in goroutine in the background.
-func (app *Application) background(fn func()) {
+func (app *Application) Background(fn func()) {
 	// Increment the WaitGroup counter
 	app.Wg.Add(1)
 

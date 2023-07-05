@@ -24,14 +24,9 @@ func main() {
 	}
 
 	// Add the handlers to the Application
-	application.Services = map[string]app.Service{
-		"UserService": services.NewUserService(application),
-	}
-
-	// Add the handlers to the Application
 	application.Handlers = []app.Handler{
-		handlers.NewSiteHandler(application),
-		handlers.NewUserHandler(application),
+		handlers.NewSiteHandler(application, services.NewSiteService(application)),
+		handlers.NewUserHandler(application, services.NewUserService(application)),
 		// Add other handlers here
 	}
 
