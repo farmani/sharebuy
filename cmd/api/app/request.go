@@ -26,40 +26,6 @@ func (app *Application) ReadIDParam(c echo.Context) (int64, error) {
 	return id, nil
 }
 
-// writeJSON marshals data structure to encoded JSON response. It returns an error if there are
-// any issues, else error is nil.
-func (app *Application) WriteJSON(w http.ResponseWriter, status int, data Envelope,
-	headers http.Header) error {
-	// Use the json.MarshalIndent() function so that whitespace is added to the encoded JSON. Use
-	// no line prefix and tab indents for each element.
-	js, err := json.MarshalIndent(data, "", "\t")
-	if err != nil {
-		return err
-	}
-
-	// Append a newline to make it easier to view in terminal applications.
-	js = append(js, '\n')
-
-	// At this point, we know that we won't encounter any more errors before writing the response,
-	// so it's safe to add any headers that we want to include. We loop through the header map
-	// and add each header to the http.ResponseWriter header map. Note that it's OK if the
-	// provided header map is nil. Go doesn't through an error if you try to range over (
-	// or generally, read from) a nil map
-	for key, value := range headers {
-		w.Header()[key] = value
-	}
-
-	// Add the "Content-Type: Application/json" header, then write the status code and JSON response.
-	w.Header().Set("Content-Type", "Application/json")
-	w.WriteHeader(status)
-	if _, err := w.Write(js); err != nil {
-		app.Logger.PrintError(err, nil)
-		return err
-	}
-
-	return nil
-}
-
 // readJSON decodes request Body into corresponding Go type. It triages for any potential errors
 // and returns corresponding appropriate errors.
 func (app *Application) ReadJSON(c echo.Context, dst interface{}) error {

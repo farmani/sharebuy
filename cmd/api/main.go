@@ -10,18 +10,7 @@ import (
 var version = "1.0.0"
 
 func main() {
-	// Declare an instance of the config struct.
-	var cfg config.Config
-	cfg.ParseFlags()
-
-	application, err := app.NewApiApplication(cfg)
-	if err != nil {
-		panic(err)
-	}
-
-	if err := application.Bootstrap(); err != nil {
-		// panic(err)
-	}
+	application := app.NewApiApplication(config.NewConfig())
 
 	// Add the handlers to the Application
 	application.Handlers = []app.Handler{

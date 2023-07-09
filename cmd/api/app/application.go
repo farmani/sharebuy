@@ -21,7 +21,7 @@ import (
 )
 
 type Application struct {
-	Config   config.Config
+	Config   *config.Config
 	Logger   *jsonlog.Logger
 	Handlers []Handler
 	Models   data.Models
@@ -32,19 +32,30 @@ type Application struct {
 	Nats     *nats.Conn
 }
 
-func NewApiApplication(cfg config.Config) (*Application, error) {
+func NewApiApplication(cfg *config.Config) *Application {
 	return &Application{
 		Config: cfg,
-	}, nil
+	}
 }
 
 func (app *Application) Start() error {
+	_ = app.Bootstrap()
 	e := echo.New()
 	e.Server.IdleTimeout = time.Minute
 	e.Server.ReadTimeout = time.Second * 15
 	e.Server.WriteTimeout = time.Second * 30
 	for _, handler := range app.Handlers {
 		handler.RegisterRoutes(e)
+	}
+
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		code := http.StatusInternalServerError
+		var message interface{}
+		if he, ok := err.(*echo.HTTPError); ok {
+			code = he.Code
+			message = he.Message
+		}
+		app.errorResponse(c, code, message)
 	}
 
 	addr := fmt.Sprintf(":%d", app.Config.App.Port)

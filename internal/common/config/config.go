@@ -17,6 +17,12 @@ type Config struct {
 	Cors
 }
 
+func NewConfig() *Config {
+	c := &Config{}
+	c.ParseFlags()
+	return c
+}
+
 func (c *Config) ParseFlags() {
 	var file string
 	flag.StringVar(&file, "config", "", "API config file path")
