@@ -4,10 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 	"time"
 
-	"github.com/farmani/sharebuy/internal/jsonlog"
+	"github.com/farmani/sharebuy/internal/logger"
 	"github.com/go-redis/redis"
 	_ "github.com/lib/pq"
 	"github.com/nats-io/nats.go"
@@ -15,7 +14,7 @@ import (
 )
 
 func (app *Application) Bootstrap() error {
-	app.Logger = jsonlog.NewLogger(os.Stdout, jsonlog.LevelInfo)
+	app.Logger = logger.NewZapLogger(app.Config.LogPath, app.Config.Env)
 
 	err := app.openDB()
 	if err != nil {
@@ -94,7 +93,7 @@ func (app *Application) openDB() error {
 		return err
 	}
 
-	app.Logger.PrintInfo("database connection pool established", nil)
+	app.Logger.Info("database connection pool established")
 
 	return nil
 }

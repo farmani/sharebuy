@@ -1,6 +1,12 @@
 {
   "port": 4000,
   "env": "development",
+  "log": {
+    "level": "debug",
+    "format": "json",
+    "output": "stdout",
+    "path": "./logs/api.log"
+  },
   "db": {
     "host": "127.0.0.1",
     "port": 3099,

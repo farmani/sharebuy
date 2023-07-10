@@ -1,14 +1,10 @@
 package services
 
 import (
-	"errors"
-	"net/http"
 	"time"
 
 	"github.com/farmani/sharebuy/cmd/api/app"
 	"github.com/farmani/sharebuy/internal/data"
-	"github.com/farmani/sharebuy/internal/dto"
-	"github.com/labstack/echo/v4"
 )
 
 type UserService struct {
@@ -26,13 +22,25 @@ func (s *UserService) Cast() interface{} {
 	return s
 }
 
-func (s *UserService) FindById(c echo.Context) error {
+func (s *UserService) FindById(id int64) (data.User, error) {
 	// do something
 	// s.app.Db.QueryRow("SELECT 1")
-	return nil
+	if id == 0 {
+		return data.User{}, data.ErrRecordNotFound
+	}
+
+	return data.User{
+		ID:        id,
+		Name:      "Farmani",
+		Email:     "ramin.farmani@gmail.com",
+		CreatedAt: time.Now(),
+		Activated: true,
+		Version:   1,
+	}, nil
 }
 
-func (s *UserService) RegisterStart(u dto.User) data.Models.Users, err {
+/*
+func (s *UserService) RegisterStart(u dto.User) (data.Users, err) {
 	// do something
 	// s.app.Db.QueryRow("SELECT 1")
 	// Insert the user data into the database.
@@ -66,9 +74,10 @@ func (s *UserService) RegisterStart(u dto.User) data.Models.Users, err {
 
 		err = s.app.Mailer.Send(user.Email, "user_welcome.tmpl", data)
 		if err != nil {
-			s.app.Logger.PrintError(err, nil)
+				app.Logger.Error(err.(string))
 		}
 	})
 
 	return user, nil
 }
+*/

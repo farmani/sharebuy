@@ -1,7 +1,7 @@
 package app
 
 type Envelope struct {
-	Status string                 `json:"status" xml:"status"`
-	Code   int                    `json:"code" xml:"code"`
-	Data   map[string]interface{} `json:"data" xml:"data"`
+	Status string      `json:"status" xml:"status"`
+	Code   int         `json:"code" xml:"code"`
+	Data   interface{} `json:"data" xml:"data"`
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/farmani/sharebuy/internal/logger"
 	"github.com/felixge/httpsnoop"
 	echoPrometheus "github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
@@ -21,9 +22,8 @@ func (app *Application) bundleMiddleware(e *echo.Echo) {
 	}))
 	e.Use(middleware.RequestID())
 	e.Pre(middleware.RemoveTrailingSlash())
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "${time_rfc3339}, IP=${remote_ip}, id=${id}, method=${method}, uri=${uri}, status=${status}, latency=${latency_human}\n",
-	}))
+	zapLogger := logger.NewZapLogger(app.Config.LogPath, app.Config.Env)
+	e.Use(logger.ZapLogger(zapLogger))
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
 		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},

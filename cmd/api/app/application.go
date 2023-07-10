@@ -13,16 +13,16 @@ import (
 
 	"github.com/farmani/sharebuy/internal/common/config"
 	"github.com/farmani/sharebuy/internal/data"
-	"github.com/farmani/sharebuy/internal/jsonlog"
 	"github.com/farmani/sharebuy/internal/mailer"
 	"github.com/go-redis/redis"
 	"github.com/labstack/echo/v4"
 	"github.com/nats-io/nats.go"
+	"go.uber.org/zap"
 )
 
 type Application struct {
 	Config   *config.Config
-	Logger   *jsonlog.Logger
+	Logger   *zap.Logger
 	Handlers []Handler
 	Models   data.Models
 	Mailer   mailer.Mailer
@@ -44,10 +44,6 @@ func (app *Application) Start() error {
 	e.Server.IdleTimeout = time.Minute
 	e.Server.ReadTimeout = time.Second * 15
 	e.Server.WriteTimeout = time.Second * 30
-	for _, handler := range app.Handlers {
-		handler.RegisterRoutes(e)
-	}
-
 	e.HTTPErrorHandler = func(err error, c echo.Context) {
 		code := http.StatusInternalServerError
 		var message interface{}
@@ -56,6 +52,11 @@ func (app *Application) Start() error {
 			message = he.Message
 		}
 		app.errorResponse(c, code, message)
+	}
+
+	app.bundleMiddleware(e)
+	for _, handler := range app.Handlers {
+		handler.RegisterRoutes(e)
 	}
 
 	addr := fmt.Sprintf(":%d", app.Config.App.Port)
@@ -75,9 +76,11 @@ func (app *Application) Start() error {
 		// Log a message to say we caught the signal. Notice that we also call the
 		// String() method on the signal to get the signal name and include it in the log
 		// entry properties.
-		app.Logger.PrintInfo("caught signal", map[string]string{
-			"signal": s.String(),
-		})
+		app.Logger.Info(
+			"Caught signal",
+			zap.String("time", time.Now().UTC().Format(time.RFC3339)),
+			zap.String("signal", s.String()),
+		)
 
 		// Create a context with a 5-second timeout.
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -92,9 +95,11 @@ func (app *Application) Start() error {
 		}
 		// Log a message to say that we're waiting for any background goroutines to complete
 		// their tasks.
-		app.Logger.PrintInfo("completing background tasks", map[string]string{
-			"addr": e.Server.Addr,
-		})
+		app.Logger.Info(
+			"Completing background tasks",
+			zap.String("time", time.Now().UTC().Format(time.RFC3339)),
+			zap.String("addr", e.Server.Addr),
+		)
 
 		// Call Wait() to block until our WaitGroup counter is zero. This essentially blocks
 		// until the background goroutines have finished. Then we return nil on the shutdownError
@@ -105,10 +110,12 @@ func (app *Application) Start() error {
 	}()
 
 	// Log a "starting server" message.
-	app.Logger.PrintInfo("starting server", map[string]string{
-		"addr": e.Server.Addr,
-		"env":  app.Config.App.Env,
-	})
+	app.Logger.Debug(
+		"Starting server",
+		zap.String("time", time.Now().UTC().Format(time.RFC3339)),
+		zap.String("addr", e.Server.Addr),
+		zap.String("env", app.Config.App.Env),
+	)
 
 	// Calling Shutdown() on our server will cause ListenAndServer() to immediately
 	// return a http.ErrServerClosed error. So, if we see this error, it is actually a good thing
@@ -130,9 +137,7 @@ func (app *Application) Start() error {
 
 	// At this point we know that the graceful shutdown completed successfully, and we log
 	// a "stopped server" message.
-	app.Logger.PrintInfo("Stopped server", map[string]string{
-		"addr": e.Server.Addr,
-	})
+	app.Logger.Info("Stopped server", zap.String("addr", e.Server.Addr))
 
 	return nil
 }

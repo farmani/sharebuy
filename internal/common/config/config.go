@@ -54,6 +54,7 @@ func (c *Config) ParseFlags() {
 			panic(fmt.Errorf("fatal error config file: %w", err))
 		}
 	}
+	c.App.LogPath = viper.GetString("log.path")
 
 	// SHAREBUY_DB_DSN='postgres://postgres:ringsport@localhost/sharebuy?sslmode=disable'
 	c.Db.Dsn = viper.GetString("db.dsn")

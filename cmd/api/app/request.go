@@ -195,7 +195,7 @@ func (app *Application) Background(fn func()) {
 		// Recover from any panic
 		defer func() {
 			if err := recover(); err != nil {
-				app.Logger.PrintError(fmt.Errorf("%s", err), nil)
+				app.Logger.Error(err.(string))
 			}
 		}()
 

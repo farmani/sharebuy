@@ -11,10 +11,11 @@ require (
 	github.com/labstack/gommon v0.4.0
 	github.com/lib/pq v1.10.9
 	github.com/nats-io/nats.go v1.27.1
+	github.com/pkg/errors v0.9.1
 	github.com/resendlabs/resend-go v1.6.1
 	github.com/spf13/viper v1.16.0
 	github.com/volatiletech/sqlboiler/v4 v4.14.2
-	golang.org/x/crypto v0.10.0
+	golang.org/x/crypto v0.11.0
 )
 
 require (
@@ -54,9 +55,9 @@ require (
 	go.uber.org/fx v1.20.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/net v0.11.0 // indirect
+	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
-	golang.org/x/text v0.10.0 // indirect
+	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
