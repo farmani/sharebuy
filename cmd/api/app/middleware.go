@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/farmani/sharebuy/internal/logger"
+	"github.com/farmani/sharebuy/pkg/logger"
 	"github.com/felixge/httpsnoop"
 	echoPrometheus "github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
@@ -22,7 +22,7 @@ func (app *Application) bundleMiddleware(e *echo.Echo) {
 	}))
 	e.Use(middleware.RequestID())
 	e.Pre(middleware.RemoveTrailingSlash())
-	zapLogger := logger.NewZapLogger(app.Config.LogPath, app.Config.Env)
+	zapLogger := logger.NewZapLogger(app.Config.Logger.Path, app.Config.App.Env)
 	e.Use(logger.ZapLogger(zapLogger))
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},

@@ -11,9 +11,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/farmani/sharebuy/internal/common/config"
+	"github.com/farmani/sharebuy/internal/config"
 	"github.com/farmani/sharebuy/internal/data"
-	"github.com/farmani/sharebuy/internal/mailer"
+	"github.com/farmani/sharebuy/pkg/mailer"
 	"github.com/go-redis/redis"
 	"github.com/labstack/echo/v4"
 	"github.com/nats-io/nats.go"
@@ -73,14 +73,8 @@ func (app *Application) Start() error {
 		// Read the signal from the quit channel. This code will block until a signal is
 		// received.
 		s := <-quit
-		// Log a message to say we caught the signal. Notice that we also call the
-		// String() method on the signal to get the signal name and include it in the log
-		// entry properties.
-		app.Logger.Info(
-			"Caught signal",
-			zap.String("time", time.Now().UTC().Format(time.RFC3339)),
-			zap.String("signal", s.String()),
-		)
+
+		app.Logger.Info("Caught signal", zap.String("signal", s.String()))
 
 		// Create a context with a 5-second timeout.
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -95,11 +89,7 @@ func (app *Application) Start() error {
 		}
 		// Log a message to say that we're waiting for any background goroutines to complete
 		// their tasks.
-		app.Logger.Info(
-			"Completing background tasks",
-			zap.String("time", time.Now().UTC().Format(time.RFC3339)),
-			zap.String("addr", e.Server.Addr),
-		)
+		app.Logger.Info("Completing background tasks", zap.String("addr", e.Server.Addr))
 
 		// Call Wait() to block until our WaitGroup counter is zero. This essentially blocks
 		// until the background goroutines have finished. Then we return nil on the shutdownError
@@ -112,7 +102,6 @@ func (app *Application) Start() error {
 	// Log a "starting server" message.
 	app.Logger.Debug(
 		"Starting server",
-		zap.String("time", time.Now().UTC().Format(time.RFC3339)),
 		zap.String("addr", e.Server.Addr),
 		zap.String("env", app.Config.App.Env),
 	)
@@ -137,7 +126,7 @@ func (app *Application) Start() error {
 
 	// At this point we know that the graceful shutdown completed successfully, and we log
 	// a "stopped server" message.
-	app.Logger.Info("Stopped server", zap.String("addr", e.Server.Addr))
+	app.Logger.Warn("Stopped server", zap.String("addr", e.Server.Addr))
 
 	return nil
 }

@@ -1,22 +1,25 @@
-package app
+package requests
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
-	"github.com/farmani/sharebuy/pkg/validator"
+	"github.com/farmani/sharebuy/internal/validator"
 	"github.com/labstack/echo/v4"
 )
 
+type Requests interface {
+	Validate(e *echo.Echo)
+}
+
 // readIDParam reads interpolated "id" from request URL and returns it and nil. If there is an error
 // it returns and 0 and an error.
-func (app *Application) ReadIDParam(c echo.Context) (int64, error) {
+func ReadIDParam(c echo.Context) (int64, error) {
 	// Parse the id param from the URL
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil || id < 1 {
@@ -28,20 +31,12 @@ func (app *Application) ReadIDParam(c echo.Context) (int64, error) {
 
 // readJSON decodes request Body into corresponding Go type. It triages for any potential errors
 // and returns corresponding appropriate errors.
-func (app *Application) ReadJSON(c echo.Context, dst interface{}) error {
-	w := c.Response().Writer
-	r := c.Request()
-
-	// Use http.MaxBytesReader() to limit the size of the request body to 1MB to prevent
-	// any potential nefarious DoS attacks.
-	maxBytes := 1_048_576
-	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))
-
+func ReadJSON(c echo.Context, dst interface{}) error {
 	// Initialize the json.Decoder, and call the DisallowUnknownFields() method on it
 	// before decoding. So, if the JSON from the client includes any field which
 	// cannot be mapped to the target destination, the decoder will return an error
 	// instead of just ignoring the field.
-	dec := json.NewDecoder(r.Body)
+	dec := json.NewDecoder(c.Request().Body)
 	dec.DisallowUnknownFields()
 
 	// Decode the request body to the destination.
@@ -97,7 +92,7 @@ func (app *Application) ReadJSON(c echo.Context, dst interface{}) error {
 		// error "http: request body too large". There is an open issue about turning
 		// this into a distinct error type at https://github.com/golang/go/issues/30715.
 		case err.Error() == "http: request body too large":
-			return fmt.Errorf("body must not be larger than %d bytes", maxBytes)
+			return fmt.Errorf("body must not be larger than %d bytes", 2000)
 
 		// A json.InvalidUnmarshalError error will be returned if we pass a non-nil
 		// pointer to Decode(). We catch this and panic, rather than returning an error
@@ -127,7 +122,7 @@ func (app *Application) ReadJSON(c echo.Context, dst interface{}) error {
 
 // readString is a helper method on Application type that returns a string value from the URL query
 // string, or the provided default value if no matching key is found.
-func (app *Application) ReadStrings(qs url.Values, key string, defaultValue string) string {
+func ReadStrings(qs url.Values, key string, defaultValue string) string {
 	// Extract the value for a given key from the URL query string.
 	// If no key exists this will return an empty string "".
 	s := qs.Get(key)
@@ -144,7 +139,7 @@ func (app *Application) ReadStrings(qs url.Values, key string, defaultValue stri
 // readCSV is a helper method on Application type that reads a string value from the URL query
 // string and then splits it into a slice on the comma character. If no matching key is found
 // then it returns the provided default value.
-func (app *Application) ReadCSV(qs url.Values, key string, defaultValue []string) []string {
+func ReadCSV(qs url.Values, key string, defaultValue []string) []string {
 	// Extract the value from the URL query string
 	csv := qs.Get(key)
 
@@ -161,7 +156,7 @@ func (app *Application) ReadCSV(qs url.Values, key string, defaultValue []string
 // string and converts it to an integer before returning. If no matching key is found then it
 // returns the provided default value. If the value couldn't be converted to an integer, then we
 // record an error message in the provided Validator instance, and return the default value.
-func (app *Application) ReadInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+func ReadInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
 	// Extract the value from the URL query string.
 	s := qs.Get(key)
 
@@ -180,26 +175,4 @@ func (app *Application) ReadInt(qs url.Values, key string, defaultValue int, v *
 
 	// Otherwise, return the converted integer value.
 	return i
-}
-
-// background is a helper that accepts an arbitrary function as a parameter and runs it in a
-// in goroutine in the background.
-func (app *Application) Background(fn func()) {
-	// Increment the WaitGroup counter
-	app.Wg.Add(1)
-
-	go func() {
-		// Use defer to decrement the WaitGroup counter before the goroutine returns.
-		defer app.Wg.Done()
-
-		// Recover from any panic
-		defer func() {
-			if err := recover(); err != nil {
-				app.Logger.Error(err.(string))
-			}
-		}()
-
-		// Execute the arbitrary function that we passed as the parameter
-		fn()
-	}()
 }

@@ -8,7 +8,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/farmani/sharebuy/internal/validator"
+	"github.com/farmani/sharebuy/pkg/validator"
 	"golang.org/x/crypto/bcrypt"
 )
 

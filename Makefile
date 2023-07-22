@@ -62,5 +62,7 @@ destroy_cluster_resources:
 destroy_resources:
 	make -C resources force-destroy KUBECONFIG=$(KUBECONFIG)
 
+check_vul:
+	govulncheck ./...
 
 .PHONY: kubernetes default cluster_resources resources linode_cluster wait_for_linode_cluster wait_for_doks_cluster destroy_resources destroy_cluster_resources destroy_linode_cluster destroy wait_for_cluster_resources digitalocean_cluster

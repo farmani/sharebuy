@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/farmani/sharebuy/cmd/api/app"
+	"github.com/farmani/sharebuy/cmd/api/requests"
 	"github.com/farmani/sharebuy/cmd/api/responses"
 	"github.com/farmani/sharebuy/cmd/api/services"
 	"github.com/farmani/sharebuy/internal/data"
@@ -52,58 +54,57 @@ func (h *UserHandler) UserView(c echo.Context) error {
 	return responses.WriteJSON(c, responses.NewUserViewResponse(&user))
 }
 
-/*
-	func (h *UserHandler) RegisterStart(c echo.Context) error {
-		r := requests.NewRegisterStartRequest(c)
-		err := c.Bind(&r)
-		if err != nil {
-			badRequestResponse(c, err)
-			return nil
-		}
-
-		if v, err := r.Validate(c); err != nil {
-			switch {
-			// If we get an ErrDuplicateEmail error, use the v.AddError() method to manually add
-			// a message to the validator instance, and then call our failedValidationResponse
-			// helper().
-			case errors.Is(err, data.ErrDuplicateEmail):
-				v.AddError("email", "a user with this email address already exists")
-				failedValidationResponse(c, v.Errors)
-			default:
-				serverErrorResponse(c, err)
-			}
-			return nil
-		}
-
-		err = h.userService.RegisterStart(user)
-		if err != nil {
-			switch {
-			// If we get an ErrDuplicateEmail error, use the v.AddError() method to manually add
-			// a message to the validator instance, and then call our failedValidationResponse
-			// helper().
-			case errors.Is(err, data.ErrDuplicateEmail):
-				v.AddError("email", "a user with this email address already exists")
-				failedValidationResponse(c, v.Errors)
-			default:
-				serverErrorResponse(c, err)
-			}
-			return nil
-		}
-
-		// us.RegisterStart(c)
-		res := app.Envelope{
-			Status: "OK",
-			Code:   200,
-			Data: map[string]interface{}{
-				"name":     input.Name,
-				"email":    input.Email,
-				"password": input.Password,
-			},
-		}
-
-		return c.JSON(http.StatusOK, res)
+func (h *UserHandler) RegisterStart(c echo.Context) error {
+	r := requests.NewRegisterStartRequest(c)
+	err := c.Bind(&r)
+	if err != nil {
+		badRequestResponse(c, err)
+		return nil
 	}
-*/
+
+	if v, err := r.Validate(c); err != nil {
+		switch {
+		// If we get an ErrDuplicateEmail error, use the v.AddError() method to manually add
+		// a message to the validator instance, and then call our failedValidationResponse
+		// helper().
+		case errors.Is(err, data.ErrDuplicateEmail):
+			v.AddError("email", "a user with this email address already exists")
+			failedValidationResponse(c, v.Errors)
+		default:
+			serverErrorResponse(c, err)
+		}
+		return nil
+	}
+
+	err = h.userService.RegisterStart(user)
+	if err != nil {
+		switch {
+		// If we get an ErrDuplicateEmail error, use the v.AddError() method to manually add
+		// a message to the validator instance, and then call our failedValidationResponse
+		// helper().
+		case errors.Is(err, data.ErrDuplicateEmail):
+			v.AddError("email", "a user with this email address already exists")
+			failedValidationResponse(c, v.Errors)
+		default:
+			serverErrorResponse(c, err)
+		}
+		return nil
+	}
+
+	// us.RegisterStart(c)
+	res := app.Envelope{
+		Status: "OK",
+		Code:   200,
+		Data: map[string]interface{}{
+			"name":     input.Name,
+			"email":    input.Email,
+			"password": input.Password,
+		},
+	}
+
+	return c.JSON(http.StatusOK, res)
+}
+
 func (h *UserHandler) RegisterEnd(c echo.Context) error {
 	res := app.Envelope{
 		Status: "OK",

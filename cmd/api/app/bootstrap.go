@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"time"
 
-	"github.com/farmani/sharebuy/internal/logger"
+	"github.com/farmani/sharebuy/pkg/logger"
 	"github.com/go-redis/redis"
 	_ "github.com/lib/pq"
 	"github.com/nats-io/nats.go"
@@ -14,8 +15,9 @@ import (
 )
 
 func (app *Application) Bootstrap() error {
-	app.Logger = logger.NewZapLogger(app.Config.LogPath, app.Config.Env)
+	app.Logger = logger.NewZapLogger(app.Config.Logger.Path, app.Config.App.Env)
 
+	return nil
 	err := app.openDB()
 	if err != nil {
 		return fmt.Errorf("open DB Failed: %w", err)
@@ -100,7 +102,7 @@ func (app *Application) openDB() error {
 
 func (app *Application) openRedis() error {
 	app.Redis = redis.NewClient(&redis.Options{
-		Addr:     app.Config.Redis.Addr,
+		Addr:     app.Config.Redis.Host + ":" + strconv.Itoa(app.Config.Redis.Port),
 		Password: app.Config.Redis.Password, // no password set
 		DB:       app.Config.Redis.Db,       // use default DB
 	})
