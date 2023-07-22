@@ -10,6 +10,7 @@ import (
 	"github.com/farmani/sharebuy/cmd/api/responses"
 	"github.com/farmani/sharebuy/cmd/api/services"
 	"github.com/farmani/sharebuy/internal/data"
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 )
 
@@ -17,6 +18,7 @@ type UserHandler struct {
 	// Dependencies or state for the UserHandler
 	app         *app.Application
 	userService *services.UserService
+	validate    *validator.Validate
 }
 
 func NewUserHandler(a *app.Application, u *services.UserService) *UserHandler {
@@ -62,7 +64,8 @@ func (h *UserHandler) RegisterStart(c echo.Context) error {
 		return nil
 	}
 
-	if v, err := r.Validate(c); err != nil {
+	v := validator.New()
+	if err := r.Validate(v, c); err != nil {
 		switch {
 		// If we get an ErrDuplicateEmail error, use the v.AddError() method to manually add
 		// a message to the validator instance, and then call our failedValidationResponse
@@ -76,29 +79,31 @@ func (h *UserHandler) RegisterStart(c echo.Context) error {
 		return nil
 	}
 
-	err = h.userService.RegisterStart(user)
-	if err != nil {
-		switch {
-		// If we get an ErrDuplicateEmail error, use the v.AddError() method to manually add
-		// a message to the validator instance, and then call our failedValidationResponse
-		// helper().
-		case errors.Is(err, data.ErrDuplicateEmail):
-			v.AddError("email", "a user with this email address already exists")
-			failedValidationResponse(c, v.Errors)
-		default:
-			serverErrorResponse(c, err)
+	/*
+
+		err = h.userService.RegisterStart(user)
+		if err != nil {
+			switch {
+			// If we get an ErrDuplicateEmail error, use the v.AddError() method to manually add
+			// a message to the validator instance, and then call our failedValidationResponse
+			// helper().
+			case errors.Is(err, data.ErrDuplicateEmail):
+				v.AddError("email", "a user with this email address already exists")
+				failedValidationResponse(c, v.Errors)
+			default:
+				serverErrorResponse(c, err)
+			}
+			return nil
 		}
-		return nil
-	}
+	*/
 
 	// us.RegisterStart(c)
 	res := app.Envelope{
 		Status: "OK",
 		Code:   200,
 		Data: map[string]interface{}{
-			"name":     input.Name,
-			"email":    input.Email,
-			"password": input.Password,
+			"email":    r.Email,
+			"password": r.Password,
 		},
 	}
 

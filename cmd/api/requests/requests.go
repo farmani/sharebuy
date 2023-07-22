@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/farmani/sharebuy/internal/validator"
+	"github.com/farmani/sharebuy/pkg/validator"
 	"github.com/labstack/echo/v4"
 )
 
