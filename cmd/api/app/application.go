@@ -14,9 +14,9 @@ import (
 	"github.com/farmani/sharebuy/internal/config"
 	"github.com/farmani/sharebuy/internal/data"
 	"github.com/farmani/sharebuy/pkg/mailer"
-	"github.com/go-redis/redis"
 	"github.com/labstack/echo/v4"
 	"github.com/nats-io/nats.go"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -39,7 +39,13 @@ func NewApiApplication(cfg *config.Config) *Application {
 }
 
 func (app *Application) Start() error {
-	_ = app.Bootstrap()
+	var err error
+
+	err = app.Bootstrap()
+	if err != nil {
+		return err
+	}
+
 	e := echo.New()
 	e.Server.IdleTimeout = time.Minute
 	e.Server.ReadTimeout = time.Second * 15
@@ -119,7 +125,7 @@ func (app *Application) Start() error {
 	// Otherwise, we wait to receive the return value from Shutdown() on the shutdownErr
 	// channel. If the return value is an error, we know that there was a problem with the
 	// graceful shutdown, and we return the error.
-	err := <-shutdownError
+	err = <-shutdownError
 	if err != nil {
 		return err
 	}

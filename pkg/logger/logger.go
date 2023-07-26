@@ -102,6 +102,6 @@ func getOptions(cfg *Config) []zap.Option {
 	return []zap.Option{
 		zap.AddStacktrace(zapcore.ErrorLevel),
 		zap.AddCaller(),
-		zap.AddCallerSkip(1),
+		zap.AddCallerSkip(2),
 	}
 }

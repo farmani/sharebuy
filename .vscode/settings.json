@@ -1,9 +1,11 @@
 {
     "cSpell.words": [
         "Backoff",
+        "echojwt",
         "koanf",
         "ncfg",
         "Nkey",
-        "Syncer"
+        "Syncer",
+        "truemail"
     ]
 }

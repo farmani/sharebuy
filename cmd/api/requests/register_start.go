@@ -1,56 +1,37 @@
 package requests
 
 import (
-	"fmt"
+	"errors"
 
-	"github.com/farmani/sharebuy/internal/data"
-	"github.com/go-playground/validator/v10"
+	"github.com/farmani/sharebuy/pkg/validator"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
+)
+
+var (
+	ErrBadRequest       = errors.New("bad request error")
+	ErrFailedValidation = errors.New("failed validation error")
 )
 
 type RegisterStartRequest struct {
-	Email    string `json:"email" xml:"email" form:"email" validate:"required,email"`
+	Email    string `json:"email" xml:"email" form:"email" validate:"required,email_dns"`
 	Password string `json:"password" xml:"password" form:"password" validate:"required"`
 }
 
-func NewRegisterStartRequest(c echo.Context) *RegisterStartRequest {
-	return &RegisterStartRequest{}
+func NewRegisterStartRequest(c echo.Context, v *validator.Validator) (*RegisterStartRequest, error) {
+	r := &RegisterStartRequest{}
+
+	err := c.Bind(&r)
+	if err != nil {
+		return nil, ErrBadRequest
+	}
+
+	if v.Validate(r); !v.Valid() {
+		return nil, ErrFailedValidation
+	}
+
+	return r, nil
 }
 
-func (r *RegisterStartRequest) Validate(v *validator.Validate, c echo.Context) error {
-
-	err := v.Struct(r)
-	if err != nil {
-
-		for _, err := range err.(validator.ValidationErrors) {
-
-			fmt.Println(err.Namespace())
-			fmt.Println(err.Field())
-			fmt.Println(err.StructNamespace())
-			fmt.Println(err.StructField())
-			fmt.Println(err.Tag())
-			fmt.Println(err.ActualTag())
-			fmt.Println(err.Kind())
-			fmt.Println(err.Type())
-			fmt.Println(err.Value())
-			fmt.Println(err.Param())
-			fmt.Println()
-		}
-
-		// from here you can create your own error messages in whatever language you wish
-		return errors.Wrap(err, "unable to process request")
-	}
-
-	user := &data.User{
-		Email:     r.Email,
-		Activated: false,
-	}
-
-	err = user.Password.Set(r.Password)
-	if err != nil {
-		return errors.Wrap(err, "unable to encrypt password")
-	}
-
-	return nil
+func (r *RegisterStartRequest) Validate(v *validator.Validator) {
+	v.Validate(r)
 }

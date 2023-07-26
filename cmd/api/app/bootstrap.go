@@ -4,11 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/farmani/sharebuy/pkg/logger"
-	"github.com/go-redis/redis"
+	"github.com/farmani/sharebuy/pkg/redis"
 	_ "github.com/lib/pq"
 	"github.com/nats-io/nats.go"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -16,18 +15,18 @@ import (
 
 func (app *Application) Bootstrap() error {
 	app.Logger = logger.NewZapLogger(app.Config.Logger.Path, app.Config.App.Env)
-
-	return nil
-	err := app.openDB()
-	if err != nil {
-		return fmt.Errorf("open DB Failed: %w", err)
-	}
+	var err error
 
 	err = app.openRedis()
 	if err != nil {
 		return fmt.Errorf("open Redis Failed: %w", err)
 	}
 
+	return nil
+	err = app.openDB()
+	if err != nil {
+		return fmt.Errorf("open DB Failed: %w", err)
+	}
 	err = app.openNats()
 	if err != nil {
 		return fmt.Errorf("open NATS Failed: %w", err)
@@ -101,16 +100,22 @@ func (app *Application) openDB() error {
 }
 
 func (app *Application) openRedis() error {
-	app.Redis = redis.NewClient(&redis.Options{
-		Addr:     app.Config.Redis.Host + ":" + strconv.Itoa(app.Config.Redis.Port),
-		Password: app.Config.Redis.Password, // no password set
-		DB:       app.Config.Redis.Db,       // use default DB
-	})
+	app.Redis = redis.New(app.Config.Redis)
 
-	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	// defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	app.Redis.Ping()
+	app.Redis.Ping(ctx)
+
+	err := app.Redis.Set(ctx, "foo", "bar", 0).Err()
+	if err != nil {
+		return err
+	}
+
+	_, err = app.Redis.Get(ctx, "foo").Result()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

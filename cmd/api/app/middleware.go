@@ -63,6 +63,28 @@ func (app *Application) bundleMiddleware(e *echo.Echo) {
 		},
 		Limit: "2M",
 	}))
+
+	/*
+		e.Use(echojwt.WithConfig(echojwt.Config{
+			SigningKey: []byte(app.Config.Jwt.PrivatePem),
+			Skipper: func(c echo.Context) bool {
+				return strings.Contains(c.Path(), "upload")
+			},
+			SigningMethod: "EdDSA",
+			TokenLookup:   "header:Authorization:Bearer,cookie:__Secure_token",
+			// BeforeFunc middleware.BeforeFunc
+			// SuccessHandler func(c echo.Context)
+			// ErrorHandler func(c echo.Context, err error) error
+			// ContinueOnIgnoredError bool
+			// SigningKey interface{}
+			// SigningKeys map[string]interface{}
+			// TokenLookupFuncs []middleware.ValuesExtractor
+			// ParseTokenFunc jwtToken.ExtractToken func(c echo.Context, auth string) (interface{}, error)
+			NewClaimsFunc: func(c echo.Context) golangJwt.Claims {
+				return new(jwt.Claims)
+			},
+		}))
+	*/
 	// e.Validator = NewValidator()
 
 }
@@ -146,4 +168,9 @@ func (app *Application) metrics(next http.Handler) http.Handler {
 		// function to convert the status (an integer) to a string.
 		totalResponsesSentbyStatus.Add(strconv.Itoa(metrics.Code), 1)
 	})
+}
+
+func JWTErrorChecker(err error, c echo.Context) error {
+	// Redirects to the signIn form.
+	return c.Redirect(http.StatusMovedPermanently, c.Echo().Reverse("userSignInForm"))
 }

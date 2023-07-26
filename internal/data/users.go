@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"regexp"
 	"time"
 
 	"github.com/farmani/sharebuy/pkg/validator"
@@ -248,7 +249,7 @@ func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 // for email addresses, validator.EmailRX.
 func ValidateEmail(v *validator.Validator, email string) {
 	v.Check(email != "", "email", "must be provided")
-	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be valid email address")
+	v.Check(validator.Matches(email, regexp.MustCompile(validator.EmailRX)), "email", "must be valid email address")
 }
 
 // ValidatePasswordPlaintext validtes that the password is not an empty string and is between 8 and
