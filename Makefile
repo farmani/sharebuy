@@ -65,4 +65,13 @@ destroy_resources:
 check_vul:
 	govulncheck ./...
 
+migrate_create:
+	 migrate create -ext sql -dir internal/repository/migrations -seq create_$(name)_table
+
+migrate_up:
+	migrate -path internal/repository/migrations -database "postgres://postgres:postgres@localhost:5432/waptap?sslmode=disable" -verbose up
+
+migrate_down:
+	migrate -path internal/repository/migrations -database "postgres://postgres:postgres@localhost:5432/waptap?sslmode=disable" -verbose down
+
 .PHONY: kubernetes default cluster_resources resources linode_cluster wait_for_linode_cluster wait_for_doks_cluster destroy_resources destroy_cluster_resources destroy_linode_cluster destroy wait_for_cluster_resources digitalocean_cluster

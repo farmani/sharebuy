@@ -16,6 +16,8 @@ import (
 	"github.com/farmani/sharebuy/pkg/jwt"
 	"github.com/farmani/sharebuy/pkg/validator"
 	golangJwt "github.com/golang-jwt/jwt/v5"
+	"github.com/gorilla/sessions"
+	"github.com/labstack/echo-contrib/session"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -56,21 +58,21 @@ func (h *UserHandler) RegisterRoutes(e *echo.Echo) {
 				return
 			}
 			//
-			//claims := jwt.Claims{}
-			//_, err := jwt.ParseWithClaims(token, &claims, func(token *jwt.Token) (interface{}, error) {
+			// claims := jwt.Claims{}
+			// _, err := jwt.ParseWithClaims(token, &claims, func(token *jwt.Token) (interface{}, error) {
 			//	return privateEd25519Key, nil
-			//})
-			//if err != nil {
+			// })
+			// if err != nil {
 			//	h.app.Logger.Warn("unable to parse token")
 			//	return
-			//}
+			// }
 			//
-			//if claims.ExpiresAt < time.Now().Unix() {
+			// if claims.ExpiresAt < time.Now().Unix() {
 			//	h.app.Logger.Warn("token expired")
 			//	return
-			//}
+			// }
 			//
-			//c.Set("user", claims)
+			// c.Set("user", claims)
 		},
 		TokenLookupFuncs: []middleware.ValuesExtractor{
 			func(c echo.Context) ([]string, error) {
@@ -115,20 +117,20 @@ func (h *UserHandler) RegisterRoutes(e *echo.Echo) {
 	}
 
 	// Users handlers
-	e.POST("/v1/users", h.RegisterStart)
-	e.PUT("/v1/users/activated", h.RegisterEnd)
-	e.POST("/v1/users/login", h.Login)
+	e.POST("/users/v1/signup", h.RegisterStart)
+	e.POST("/users/v1/login", h.Login)
 	// e.POST("/v1/users/forget", h.createAuthenticationTokenHandler)
 
-	e.GET("/v1/users/:id", h.UserView, echojwt.WithConfig(config))
-	e.GET("/v1/users/me", h.Me, echojwt.WithConfig(config))
-	e.POST("/v1/users/logout", h.Logout, echojwt.WithConfig(config))
+	e.GET("/users/v1/me", h.Me, echojwt.WithConfig(config))
+	e.POST("/users/v1/logout", h.Logout, echojwt.WithConfig(config))
+	e.GET("/users/v1/:id", h.UserView, echojwt.WithConfig(config))
+	e.PUT("/users/v1/activate", h.RegisterEnd, echojwt.WithConfig(config))
 }
 
 func (h *UserHandler) UserView(c echo.Context) error {
-	//jwtUser := c.Get("user").(*jwt.Token)
-	//jwt.Token.ExtractData(c.Get("user").(*jwt.Token), jwtUser)
-	//id, _ := strconv.Atoi(claims["id"].(string))
+	// jwtUser := c.Get("user").(*jwt.Token)
+	// jwt.Token.ExtractData(c.Get("user").(*jwt.Token), jwtUser)
+	// id, _ := strconv.Atoi(claims["id"].(string))
 	user, err := h.userService.FindById(1)
 	if err != nil {
 		switch err {
@@ -204,6 +206,15 @@ func (h *UserHandler) RegisterStart(c echo.Context) error {
 	}
 
 	enc := encryption.New(h.app.Config.Encryption)
+
+	sess, _ := session.Get("session", c)
+	sess.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   86400 * 7,
+		HttpOnly: true,
+	}
+	sess.Values["foo"] = "bar"
+	sess.Save(c.Request(), c.Response())
 
 	cookie := cookie.New(h.app.Config.Cookie)
 	cookie.SetEncryptedCookies(c, enc, h.app.Config.Jwt.CookieTokenName, t)

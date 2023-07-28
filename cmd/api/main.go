@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/farmani/sharebuy/internal/repository"
 	"os"
 
 	"github.com/farmani/sharebuy/cmd/api/app"
@@ -30,20 +31,21 @@ func (cmd Server) Command(trap chan os.Signal) *cobra.Command {
 }
 
 func (cmd Server) run(cfg *cfg.Config) {
-	logger := logger.NewZap(cfg.Logger)
+	zapLogger := logger.NewZap(cfg.Logger)
 	field := zap.String("version", version)
-	logger.Info("Starting API server", field)
+	zapLogger.Info("Starting API server", field)
 
-	application := app.NewApiApplication(cfg)
+	apiApp := app.NewApiApplication(cfg)
+	repo := repository.New(zapLogger, cfg.Repository, apiApp.Db)
 
 	// Add the handlers to the Application
-	application.Handlers = []app.Handler{
-		handlers.NewSiteHandler(application, services.NewSiteService(application)),
-		handlers.NewUserHandler(application, services.NewUserService(application)),
+	apiApp.Handlers = []app.Handler{
+		handlers.NewSiteHandler(apiApp, services.NewSiteService(apiApp, repo)),
+		handlers.NewUserHandler(apiApp, services.NewUserService(apiApp, repo)),
 		// Add other handlers here
 	}
 
-	if err := application.Start(); err != nil {
+	if err := apiApp.Start(); err != nil {
 		panic(err)
 	}
 }

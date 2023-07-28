@@ -1,15 +1,16 @@
 package config
 
 import (
+	"github.com/farmani/sharebuy/internal/repository"
 	"net/http"
 	"time"
 
 	"github.com/farmani/sharebuy/pkg/cookie"
-	"github.com/farmani/sharebuy/pkg/db"
 	"github.com/farmani/sharebuy/pkg/encryption"
 	"github.com/farmani/sharebuy/pkg/jwt"
 	"github.com/farmani/sharebuy/pkg/logger"
 	"github.com/farmani/sharebuy/pkg/mailer"
+	"github.com/farmani/sharebuy/pkg/rdbms"
 
 	ncfg "github.com/farmani/sharebuy/pkg/nats"
 	"github.com/farmani/sharebuy/pkg/redis"
@@ -75,9 +76,18 @@ MCowBQYDK2VwAyEA1JsMvBD61BAYv8+JZtvex1K7Y1CgYeNnO9WMhgxNrv8=
 			Name:           "",
 			Compression:    0,
 		},
-		Db: &db.Config{
-			Dsn: "postgres://postgres:ringsport@localhost/sharebuy?sslmode=disable",
+		Db: &rdbms.Config{
+			Dsn:          "postgres://sharebuy-user:sharebuy-pass@localhost:5432/sharebuy?sslmode=disable",
+			Host:         "postgres",
+			Port:         "5432",
+			Username:     "sharebuy-user",
+			Password:     "sharebuy-pass",
+			Database:     "sharebuy",
+			MaxOpenConns: 10,
+			MaxIdleConns: 5,
+			MaxIdleTime:  "5m",
 		},
+		Repository: &repository.Config{},
 		Mailer: &mailer.Config{
 			Host:     "smtp.mailtrap.io",
 			Port:     2525,

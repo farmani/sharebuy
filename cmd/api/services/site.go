@@ -2,17 +2,20 @@ package services
 
 import (
 	"github.com/farmani/sharebuy/cmd/api/app"
+	"github.com/farmani/sharebuy/internal/repository"
 	"github.com/labstack/echo/v4"
 )
 
 type SiteService struct {
 	// Dependencies or state for the UserHandler
-	app *app.Application
+	app  *app.Application
+	repo repository.Repository
 }
 
-func NewSiteService(a *app.Application) *SiteService {
+func NewSiteService(a *app.Application, repo repository.Repository) *SiteService {
 	return &SiteService{
-		app: a,
+		app:  a,
+		repo: repo,
 	}
 }
 

@@ -1,16 +1,15 @@
 package app
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
+	"github.com/farmani/sharebuy/pkg/rdbms"
+	"go.uber.org/zap"
 	"time"
 
 	"github.com/farmani/sharebuy/pkg/logger"
 	"github.com/farmani/sharebuy/pkg/redis"
 	_ "github.com/lib/pq"
 	"github.com/nats-io/nats.go"
-	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
 func (app *Application) Bootstrap() error {
@@ -21,12 +20,12 @@ func (app *Application) Bootstrap() error {
 	if err != nil {
 		return fmt.Errorf("open Redis Failed: %w", err)
 	}
-
-	return nil
 	err = app.openDB()
 	if err != nil {
 		return fmt.Errorf("open DB Failed: %w", err)
 	}
+
+	return nil
 	err = app.openNats()
 	if err != nil {
 		return fmt.Errorf("open NATS Failed: %w", err)
@@ -63,35 +62,10 @@ func (app *Application) openNats() error {
 }
 
 func (app *Application) openDB() error {
-	db, err := sql.Open("mysql", app.Config.Db.Dsn)
+	var err error
+	app.Db, err = rdbms.New(app.Config.Db)
 	if err != nil {
-		return err
-	}
-
-	db.SetMaxOpenConns(app.Config.Db.MaxOpenConns)
-	db.SetMaxIdleConns(app.Config.Db.MaxIdleConns)
-	duration, err := time.ParseDuration(app.Config.Db.MaxIdleTime)
-	if err != nil {
-		return err
-	}
-
-	db.SetConnMaxIdleTime(duration)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	err = db.PingContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	boil.SetDB(db)
-
-	app.Db = db
-
-	err = app.Db.Ping()
-	if err != nil {
-		return err
+		app.Logger.Panic("database connection establishment failed", zap.Error(err))
 	}
 
 	app.Logger.Info("database connection pool established")
@@ -100,22 +74,13 @@ func (app *Application) openDB() error {
 }
 
 func (app *Application) openRedis() error {
-	app.Redis = redis.New(app.Config.Redis)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	app.Redis.Ping(ctx)
-
-	err := app.Redis.Set(ctx, "foo", "bar", 0).Err()
+	var err error
+	app.Redis, err = redis.New(app.Config.Redis)
 	if err != nil {
-		return err
+		app.Logger.Panic("redis connection establishment failed", zap.Error(err))
 	}
 
-	_, err = app.Redis.Get(ctx, "foo").Result()
-	if err != nil {
-		return err
-	}
+	app.Logger.Info("redis connection pool established")
 
 	return nil
 }

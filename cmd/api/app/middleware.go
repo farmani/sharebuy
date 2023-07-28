@@ -9,7 +9,9 @@ import (
 
 	"github.com/farmani/sharebuy/pkg/logger"
 	"github.com/felixge/httpsnoop"
+	"github.com/gorilla/sessions"
 	echoPrometheus "github.com/labstack/echo-contrib/echoprometheus"
+	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -24,6 +26,7 @@ func (app *Application) bundleMiddleware(e *echo.Echo) {
 	e.Pre(middleware.RemoveTrailingSlash())
 	zapLogger := logger.NewZapLogger(app.Config.Logger.Path, app.Config.App.Env)
 	e.Use(logger.ZapLogger(zapLogger))
+	e.Use(session.Middleware(sessions.NewCookieStore([]byte("token"))))
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
 		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
@@ -93,39 +96,20 @@ func (app *Application) bundleMiddleware(e *echo.Echo) {
 // enabled CORS for trusted origins.
 func (app *Application) enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Add the "Vary: Origin" header.
 		w.Header().Set("Vary", "Origin")
-
-		// Add the "Vary: Access-Control-Request-Method" header.
 		w.Header().Set("Vary", "Access-Control-Request-Method")
-
-		// Get the value of the request's Origin header.
 		origin := r.Header.Get("Origin")
 
-		// On run this if there's an Origin request header present.
 		if origin != "" {
-			// Loop through the list of trusted origins, checking to see if the request
-			// origin exactly matches one of them. If there are no trusted origins, then the
-			// loop won't be iterated.
 			for i := range app.Config.Cors.TrustedOrigins {
 				if origin == app.Config.Cors.TrustedOrigins[i] {
-					// If there is a match, then set an "Access-Control-Allow-Origin" response
-					// header with the request origin as the value and break out of the loop.
 					w.Header().Set("Access-Control-Allow-Origin", origin)
-
-					// Check if the request has the HTTP method OPTIONS and contains the
-					// "Access-Control-Request-Method" header. If it does, then we treat it as a
-					// preflight request.
 					if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
-						// Set the necessary preflight response headers.
 						w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, PUT, PATCH, DELETE")
 						w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 
-						// Set max cached times for headers for 60 seconds.
 						w.Header().Set("Access-Control-Max-Age", "60")
 
-						// Write the headers along with a 200 OK status and return from the
-						// middleware with no further action.
 						w.WriteHeader(http.StatusOK)
 						return
 					}

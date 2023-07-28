@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/farmani/sharebuy/internal/repository"
 	"time"
 
 	"github.com/farmani/sharebuy/cmd/api/app"
@@ -9,12 +10,14 @@ import (
 
 type UserService struct {
 	// Dependencies or state for the UserHandler
-	app *app.Application
+	app  *app.Application
+	repo repository.Repository
 }
 
-func NewUserService(a *app.Application) *UserService {
+func NewUserService(a *app.Application, repo repository.Repository) *UserService {
 	return &UserService{
-		app: a,
+		app:  a,
+		repo: repo,
 	}
 }
 

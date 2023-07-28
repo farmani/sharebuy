@@ -57,14 +57,14 @@ func (c *Config) ParseFlags() {
 	c.App.LogPath = viper.GetString("log.path")
 
 	// SHAREBUY_DB_DSN='postgres://postgres:ringsport@localhost/sharebuy?sslmode=disable'
-	c.Db.Dsn = viper.GetString("db.dsn")
-	c.Db.MaxOpenConns = viper.GetInt("db.maxOpenConns")
-	c.Db.MaxIdleConns = viper.GetInt("db.maxIdleConns")
-	c.Db.MaxIdleTime = viper.GetString("db.maxIdleTime")
+	c.Db.Dsn = viper.GetString("rdbms.dsn")
+	c.Db.MaxOpenConns = viper.GetInt("rdbms.maxOpenConns")
+	c.Db.MaxIdleConns = viper.GetInt("rdbms.maxIdleConns")
+	c.Db.MaxIdleTime = viper.GetString("rdbms.maxIdleTime")
 
 	// SHAREBUY_REDIS_DSN='redis://username:password@localhost:6379?sslmode=disable'
 	c.Redis.Addr = viper.GetString("redis.dsn")
-	c.Redis.Db = viper.GetInt("redis.db")
+	c.Redis.Db = viper.GetInt("redis.rdbms")
 	c.Redis.MaxRetries = viper.GetInt("redis.maxRetries")
 	c.Redis.MinRetryBackoff = viper.GetDuration("redis.minRetryBackoff")
 	c.Redis.MaxRetryBackoff = viper.GetDuration("redis.maxRetryBackoff")

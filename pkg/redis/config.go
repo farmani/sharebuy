@@ -4,7 +4,7 @@ type Config struct {
 	Host                  string `koanf:"redis.host"`
 	Port                  int    `koanf:"redis.port"`
 	Password              string `koanf:"redis.password"`
-	Db                    int    `koanf:"redis.db"`
+	Db                    int    `koanf:"redis.rdbms"`
 	MaxRetries            int    `koanf:"redis.max_retries"`
 	MinRetryBackoff       string `koanf:"redis.min_retry_backoff"`
 	MaxRetryBackoff       string `koanf:"redis.max_retry_backoff"`

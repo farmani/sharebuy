@@ -2,7 +2,7 @@ package app
 
 import (
 	"context"
-	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,6 +10,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/farmani/sharebuy/pkg/rdbms"
 
 	"github.com/farmani/sharebuy/internal/config"
 	"github.com/farmani/sharebuy/internal/data"
@@ -27,7 +29,7 @@ type Application struct {
 	Models   data.Models
 	Mailer   mailer.Mailer
 	Wg       sync.WaitGroup
-	Db       *sql.DB
+	Db       rdbms.DB
 	Redis    *redis.Client
 	Nats     *nats.Conn
 }
@@ -53,7 +55,8 @@ func (app *Application) Start() error {
 	e.HTTPErrorHandler = func(err error, c echo.Context) {
 		code := http.StatusInternalServerError
 		var message interface{}
-		if he, ok := err.(*echo.HTTPError); ok {
+		var he *echo.HTTPError
+		if errors.As(err, &he) {
 			code = he.Code
 			message = he.Message
 		}
@@ -99,13 +102,12 @@ func (app *Application) Start() error {
 
 		// Call Wait() to block until our WaitGroup counter is zero. This essentially blocks
 		// until the background goroutines have finished. Then we return nil on the shutdownError
-		// channel to indicate that the shutdown as compleeted without any issues.
+		// channel to indicate that the shutdown as completed without any issues.
 		app.Wg.Wait()
 		shutdownError <- nil
 
 	}()
 
-	// Log a "starting server" message.
 	app.Logger.Debug(
 		"Starting server",
 		zap.String("addr", e.Server.Addr),
@@ -118,7 +120,7 @@ func (app *Application) Start() error {
 	// only returning the error if it is NOT http.ErrServerClosed.
 
 	e.Logger.Debug("Starting %s server on %s", app.Config.App.Env, e.Server.Addr)
-	if err := e.Start(addr); err != nil && err != http.ErrServerClosed {
+	if err := e.Start(addr); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		e.Logger.Fatal(err)
 	}
 

@@ -1,0 +1,106 @@
+# Use postgres/example user/password credentials
+version: '3.1'
+
+services:
+
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: sharebuy-user
+      POSTGRES_PASSWORD: sharebuy-pass
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_DB: sharebuy
+    ports:
+      - '${FORWARD_POSTGRESQL_PORT:-5432}:5432'
+    volumes:
+      - './docker-data/pgsql/data:/var/lib/postgresql/data/pgdata'
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "sharebuy-user", "-d", "sharebuy" ]
+    networks:
+      - sharebuy
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - '${FORWARD_ADMINER_PORT:-8080}:8080'
+    networks:
+      - sharebuy
+
+  mailhog:
+    image: 'cd2team/mailhog:latest'
+    ports:
+      - '${FORWARD_MAILHOG_PORT:-1025}:1025'
+      - '${FORWARD_MAILHOG_DASHBOARD_PORT:-8025}:8025'
+    networks:
+      - sharebuy
+
+  redis:
+    image: 'redis:alpine'
+    ports:
+      - '${FORWARD_REDIS_PORT:-6379}:6379'
+    volumes:
+      - './docker-data/redis/data:/data'
+    networks:
+      - sharebuy
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      retries: 3
+      timeout: 5s
+
+  meilisearch:
+    image: 'getmeili/meilisearch:v1.1.0'
+    ports:
+      - '${FORWARD_MEILISEARCH_PORT:-7700}:7700'
+    volumes:
+      - './docker-data/meilisearch/data:/data.ms'
+    networks:
+      - sharebuy
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--spider",  "http://localhost:${FORWARD_MEILISEARCH_PORT:-7700}/health" ]
+      retries: 3
+      timeout: 5s
+
+  minio:
+    image: 'minio/minio:latest'
+    ports:
+      - '${FORWARD_MINIO_PORT:-9000}:9000'
+      - '${FORWARD_MINIO_CONSOLE_PORT:-8900}:8900'
+    environment:
+      MINIO_ROOT_USER: sharebuy
+      MINIO_ROOT_PASSWORD: password
+    volumes:
+      - './docker-data/minio/data:/data/minio'
+    networks:
+      - sharebuy
+    command: 'minio server /data/minio --console-address ":${FORWARD_MINIO_CONSOLE_PORT:-8900}"'
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:${FORWARD_MINIO_PORT:-9000}/minio/health/live" ]
+      retries: 3
+      timeout: 5s
+
+  nats:
+    image: 'nats:latest'
+    volumes:
+      - './docker-data/nats/data:/data'
+      - './docker-data/nats/leafnode.creds:/leafnode.creds'
+    ports:
+      - '${FORWARD_NATS_PORT:-4222}:4222'
+      - '${FORWARD_NATS_ROUTE_PORT:-6222}:6222'
+      - '${FORWARD_NATS_MONITOR_PORT:-8222}:8222'
+    environment:
+      - NATS_USER=sharebuy
+      - NATS_PASSWORD=password
+      - NATS_CLUSTER_USER=sharebuy
+      - NATS_CLUSTER_PASSWORD=password
+      - NATS_LEAFNODE_USER=sharebuy
+      - NATS_LEAFNODE_PASSWORD=password
+      - NATS_LEAFNODE_REMOTES=nats://nats:6222
+    networks:
+      - sharebuy
+
+
+networks:
+  sharebuy:
+    driver: bridge
