@@ -21,6 +21,7 @@
 go.work
 
 .env
+.vscode/
 .idea/
 logs/
 docker-data

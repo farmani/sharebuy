@@ -3,7 +3,6 @@ package mailer
 import (
 	"bytes"
 	"embed"
-	"fmt"
 	"html/template"
 	"time"
 
@@ -25,18 +24,20 @@ var templateFS embed.FS
 type Mailer struct {
 	dialer *mail.Dialer
 	sender string
+	config *Config
 }
 
 // New initializes a new mail.Dialer instance with the given SMTP server settings and a 5-second
 // timeout whenever we send an email. It returns a Mailer instance containing the dialer and sender
 // information.
-func New(host string, port int, username, password, sender string) Mailer {
-	dialer := mail.NewDialer(host, port, username, password)
+func New(cfg *Config) Mailer {
+	dialer := mail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)
 	dialer.Timeout = 5 * time.Second
 
 	return Mailer{
 		dialer: dialer,
-		sender: sender,
+		sender: cfg.Sender,
+		config: cfg,
 	}
 }
 
@@ -73,9 +74,7 @@ func (m Mailer) Send(recipient, templateFile string, data interface{}) error {
 		return err
 	}
 
-	apiKey := "re_123"
-
-	client := resend.NewClient(apiKey)
+	client := resend.NewClient(m.config.ResendAPIKey)
 
 	params := &resend.SendEmailRequest{
 		From:    m.sender,
@@ -90,11 +89,10 @@ func (m Mailer) Send(recipient, templateFile string, data interface{}) error {
 	// for 500 ms between each attempt. Note, we check for send failure with `if nil == err`
 	// because its more visually jarring and less likely to be confused with `if err != nil`
 	for i := 1; i <= 3; i++ {
-		sent, err := client.Emails.Send(params)
+		_, err := client.Emails.Send(params)
 		if err == nil {
 			return nil
 		}
-		fmt.Println(sent.Id)
 
 		// If it didn't work, sleep for a short time and retyr.
 		time.Sleep(500 * time.Millisecond)

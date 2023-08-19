@@ -2,25 +2,18 @@ package handlers
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/farmani/sharebuy/cmd/api/app"
 	"github.com/farmani/sharebuy/cmd/api/requests"
 	"github.com/farmani/sharebuy/cmd/api/responses"
 	"github.com/farmani/sharebuy/cmd/api/services"
-	"github.com/farmani/sharebuy/internal/data"
-	"github.com/farmani/sharebuy/pkg/cookie"
-	"github.com/farmani/sharebuy/pkg/encryption"
+	"github.com/farmani/sharebuy/internal/models"
+	"github.com/farmani/sharebuy/internal/repository"
 	"github.com/farmani/sharebuy/pkg/jwt"
 	"github.com/farmani/sharebuy/pkg/validator"
 	golangJwt "github.com/golang-jwt/jwt/v5"
-	"github.com/gorilla/sessions"
-	"github.com/labstack/echo-contrib/session"
-	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 type UserHandler struct {
@@ -39,218 +32,170 @@ func NewUserHandler(a *app.Application, u *services.UserService) *UserHandler {
 func (h *UserHandler) RegisterRoutes(e *echo.Echo) {
 	// Define routes specific to the UserHandler
 
-	privateEd25519Key, err := golangJwt.ParseEdPrivateKeyFromPEM([]byte(h.app.Config.Jwt.PrivatePem))
-	if err != nil {
-		h.app.Logger.Warn("unable to parse Ed25519 private key")
-	}
-	config := echojwt.Config{
-		SigningKey:    privateEd25519Key,
-		SigningMethod: "EdDSA",
-		TokenLookup:   "header:Authorization:Bearer ,cookie:" + h.app.Config.Jwt.CookieTokenName,
-		BeforeFunc: func(c echo.Context) {
-			// Extract the token from the Authorization header, and load the
-			// key pair from the config struct.
-			token := c.Request().Header.Get("Authorization")
-			token = strings.Replace(token, "Bearer ", "", 1)
-			token = strings.Replace(token, "bearer ", "", 1)
-			token = strings.Replace(token, " ", "", 1)
-			if token != "" {
-				return
-			}
-			//
-			// claims := jwt.Claims{}
-			// _, err := jwt.ParseWithClaims(token, &claims, func(token *jwt.Token) (interface{}, error) {
-			//	return privateEd25519Key, nil
-			// })
-			// if err != nil {
-			//	h.app.Logger.Warn("unable to parse token")
-			//	return
-			// }
-			//
-			// if claims.ExpiresAt < time.Now().Unix() {
-			//	h.app.Logger.Warn("token expired")
-			//	return
-			// }
-			//
-			// c.Set("user", claims)
-		},
-		TokenLookupFuncs: []middleware.ValuesExtractor{
-			func(c echo.Context) ([]string, error) {
+	/*
+		privateEd25519Key, err := golangJwt.ParseEdPrivateKeyFromPEM([]byte(h.app.Config.Jwt.PrivatePem))
+		if err != nil {
+			h.app.Logger.Warn("unable to parse Ed25519 private key")
+		}
+		config := echojwt.Config{
+			SigningKey:    privateEd25519Key,
+			SigningMethod: "EdDSA",
+			TokenLookup:   "header:Authorization:Bearer ,cookie:" + h.app.Config.Jwt.CookieTokenName,
+			BeforeFunc: func(c echo.Context) {
+				// Extract the token from the Authorization header, and load the
+				// key pair from the config struct.
 				token := c.Request().Header.Get("Authorization")
 				token = strings.Replace(token, "Bearer ", "", 1)
 				token = strings.Replace(token, "bearer ", "", 1)
 				token = strings.Replace(token, " ", "", 1)
-
-				return []string{token}, nil
+				if token != "" {
+					return
+				}
+				//
+				// claims := jwt.Claims{}
+				// _, err := jwt.ParseWithClaims(token, &claims, func(token *jwt.Token) (interface{}, error) {
+				//	return privateEd25519Key, nil
+				// })
+				// if err != nil {
+				//	h.app.Logger.Warn("unable to parse token")
+				//	return
+				// }
+				//
+				// if claims.ExpiresAt < time.Now().Unix() {
+				//	h.app.Logger.Warn("token expired")
+				//	return
+				// }
+				//
+				// c.Set("user", claims)
 			},
-			func(c echo.Context) ([]string, error) {
-				enc := encryption.New(h.app.Config.Encryption)
+			TokenLookupFuncs: []middleware.ValuesExtractor{
+				func(ectx echo.Context) ([]string, error) {
+					token := ectx.Request().Header.Get("Authorization")
+					token = strings.Replace(token, "Bearer ", "", 1)
+					token = strings.Replace(token, "bearer ", "", 1)
+					token = strings.Replace(token, " ", "", 1)
 
-				cookie := cookie.New(h.app.Config.Cookie)
-				token, err := cookie.ReadEncryptedCookies(c, enc, h.app.Config.Jwt.CookieTokenName)
-				return []string{token}, err
+					return []string{token}, nil
+				},
+				func(ectx echo.Context) ([]string, error) {
+					enc := encryption.New(h.app.Config.Encryption)
+
+					c := cookie.New(h.app.Config.Cookie)
+					token, err := c.ReadEncryptedCookies(ectx, enc, h.app.Config.Jwt.CookieTokenName)
+					return []string{token}, err
+				},
 			},
-		},
-		NewClaimsFunc: func(c echo.Context) golangJwt.Claims {
-			return new(jwt.Claims)
-		},
-		ErrorHandler: func(c echo.Context, err error) error {
-			h.app.Logger.Warn(err.Error())
-			return err
-		},
-		ParseTokenFunc: func(c echo.Context, auth string) (interface{}, error) {
-			jwtToken, err := jwt.New(h.app.Config.Jwt, h.app.Redis)
-			if err != nil {
-				return nil, err
-			}
+			NewClaimsFunc: func(ectx echo.Context) golangJwt.Claims {
+				return new(jwt.Claims)
+			},
+			ErrorHandler: func(ectx echo.Context, err error) error {
+				h.app.Logger.Warn(err.Error())
+				return err
+			},
+			ParseTokenFunc: func(ectx echo.Context, auth string) (interface{}, error) {
+				jwtToken, err := jwt.New(h.app.Config.Jwt, h.app.Redis)
+				if err != nil {
+					return nil, err
+				}
 
-			data := new(map[string]interface{})
+				data := new(map[string]interface{})
 
-			err = jwtToken.ExtractData(auth, data)
-			if err != nil {
-				return nil, err
-			}
+				err = jwtToken.ExtractData(auth, data)
+				if err != nil {
+					return nil, err
+				}
 
-			c.Set("user", data)
-			return data, nil
-		},
-	}
+				ectx.Set("user", data)
+				return data, nil
+			},
+		}
+	*/
 
 	// Users handlers
 	e.POST("/users/v1/signup", h.RegisterStart)
+	e.POST("/users/v1/active", h.RegisterEnd)
 	e.POST("/users/v1/login", h.Login)
 	// e.POST("/v1/users/forget", h.createAuthenticationTokenHandler)
 
-	e.GET("/users/v1/me", h.Me, echojwt.WithConfig(config))
-	e.POST("/users/v1/logout", h.Logout, echojwt.WithConfig(config))
-	e.GET("/users/v1/:id", h.UserView, echojwt.WithConfig(config))
-	e.PUT("/users/v1/activate", h.RegisterEnd, echojwt.WithConfig(config))
+	// e.GET("/users/v1/me", h.Me, echojwt.WithConfig(config))
+	// e.POST("/users/v1/logout", h.Logout, echojwt.WithConfig(config))
+	// e.GET("/users/v1/:id", h.UserView, echojwt.WithConfig(config))
+	// e.PUT("/users/v1/activate", h.RegisterEnd, echojwt.WithConfig(config))
 }
 
-func (h *UserHandler) UserView(c echo.Context) error {
-	// jwtUser := c.Get("user").(*jwt.Token)
-	// jwt.Token.ExtractData(c.Get("user").(*jwt.Token), jwtUser)
-	// id, _ := strconv.Atoi(claims["id"].(string))
-	user, err := h.userService.FindById(1)
-	if err != nil {
-		switch err {
-		case data.ErrRecordNotFound:
-			notFoundResponse(c)
-		default:
-			serverErrorResponse(c, err)
-		}
-		return nil
-	}
-
-	return responses.WriteJSON(c, responses.NewUserViewResponse(&user))
-}
-
-func (h *UserHandler) RegisterStart(c echo.Context) error {
-	v := validator.New(c)
-	r, err := requests.NewRegisterStartRequest(c, v)
+func (h *UserHandler) RegisterStart(ectx echo.Context) error {
+	v := validator.New(ectx)
+	r, err := requests.NewRegisterStartRequest(ectx, v)
 	if err != nil {
 		switch {
 		case errors.Is(err, requests.ErrBadRequest):
-			badRequestResponse(c, err)
+			badRequestResponse(ectx, err)
 			return nil
 		case errors.Is(err, requests.ErrFailedValidation):
-			failedValidationResponse(c, v.Errors)
+			failedValidationResponse(ectx, v.Errors)
 			return nil
 		default:
-			serverErrorResponse(c, err)
+			serverErrorResponse(ectx, err)
 			return nil
 		}
 	}
 
-	/*
-		us.RegisterStart(c)
-			err = h.userService.RegisterStart(user)
-			if err != nil {
-				switch {
-				// If we get an ErrDuplicateEmail error, use the v.AddError() method to manually add
-				// a message to the validator instance, and then call our failedValidationResponse
-				// helper().
-				case errors.Is(err, data.ErrDuplicateEmail):
-					v.AddError("email", "a user with this email address already exists")
-					failedValidationResponse(c, v.Errors)
-				default:
-					serverErrorResponse(c, err)
-				}
-				return nil
-			}
-	*/
-
-	// Create token with claims
-	jwtToken, err := jwt.New(h.app.Config.Jwt, h.app.Redis)
+	user, err := models.NewUser(r.Email, r.Password)
 	if err != nil {
-		serverErrorResponse(c, err)
+		serverErrorResponse(ectx, err)
 		return nil
 	}
 
-	mapClaims := golangJwt.MapClaims{
-		"email": r.Email,
-		"id":    12,
-	}
-	t, err := jwtToken.GenerateToken(mapClaims)
+	err = h.userService.RegisterStart(user)
 	if err != nil {
-		serverErrorResponse(c, err)
+		switch {
+		case errors.Is(err, repository.ErrDuplicateEmail):
+			v.AddError("email", "a user with this email address already exists")
+			failedValidationResponse(ectx, v.Errors)
+		default:
+			serverErrorResponse(ectx, err)
+		}
 		return nil
 	}
 
-	res := app.Envelope{
-		Status: "OK",
-		Code:   200,
-		Data: map[string]interface{}{
-			"token": t,
-		},
-	}
+	ectx.Response().Header().Add("Location", r.SuccessUrl)
 
-	enc := encryption.New(h.app.Config.Encryption)
-
-	sess, _ := session.Get("session", c)
-	sess.Options = &sessions.Options{
-		Path:     "/",
-		MaxAge:   86400 * 7,
-		HttpOnly: true,
-	}
-	sess.Values["foo"] = "bar"
-	sess.Save(c.Request(), c.Response())
-
-	cookie := cookie.New(h.app.Config.Cookie)
-	cookie.SetEncryptedCookies(c, enc, h.app.Config.Jwt.CookieTokenName, t)
-
-	return c.JSON(http.StatusOK, res)
+	return ectx.NoContent(http.StatusAccepted)
 }
 
-func (h *UserHandler) RegisterEnd(c echo.Context) error {
-	res := app.Envelope{
-		Status: "OK",
-		Code:   200,
-		Data: map[string]interface{}{
-			"env":     h.app.Config.App.Env,
-			"version": h.app.Config.App.Version,
-		},
+func (h *UserHandler) RegisterEnd(ectx echo.Context) error {
+	v := validator.New(ectx)
+	r, err := requests.NewRegisterEndRequest(ectx, v)
+	if err != nil {
+		switch {
+		case errors.Is(err, requests.ErrBadRequest):
+			badRequestResponse(ectx, err)
+			return nil
+		case errors.Is(err, requests.ErrFailedValidation):
+			failedValidationResponse(ectx, v.Errors)
+			return nil
+		default:
+			serverErrorResponse(ectx, err)
+			return nil
+		}
 	}
 
-	return c.JSON(http.StatusOK, res)
-}
-
-func (h *UserHandler) Me(c echo.Context) error {
-	user := c.Get("user")
-	fmt.Printf("%v %T", user, user)
-	res := app.Envelope{
-		Status: "OK",
-		Code:   200,
-		Data: map[string]interface{}{
-			"env":     h.app.Config.App.Env,
-			"version": h.app.Config.App.Version,
-		},
+	user, err := h.userService.ActivateUser(r.Token, r.UserId)
+	if err != nil {
+		serverErrorResponse(ectx, err)
+		return nil
 	}
 
-	return c.JSON(http.StatusOK, res)
+	t, err := h.userService.Authorize(ectx, user)
+	if err != nil {
+		serverErrorResponse(ectx, err)
+		return nil
+	}
+
+	return responses.WriteJSON(ectx, responses.NewMeResponse(user, t))
 }
 
-func (h *UserHandler) Login(c echo.Context) error {
+func (h *UserHandler) Login(ectx echo.Context) error {
 
 	// Create token with claims
 	jwtToken, err := jwt.New(h.app.Config.Jwt, h.app.Redis)
@@ -275,10 +220,10 @@ func (h *UserHandler) Login(c echo.Context) error {
 		},
 	}
 
-	return c.JSON(http.StatusOK, res)
+	return ectx.JSON(http.StatusOK, res)
 }
 
-func (h *UserHandler) Logout(c echo.Context) error {
+func (h *UserHandler) Logout(ectx echo.Context) error {
 	jwtToken, err := jwt.New(h.app.Config.Jwt, h.app.Redis)
 	if err != nil {
 		return err
@@ -294,44 +239,5 @@ func (h *UserHandler) Logout(c echo.Context) error {
 		},
 	}
 
-	return c.JSON(http.StatusOK, res)
-}
-
-func (h *UserHandler) ForgetPasswordStart(c echo.Context) error {
-	res := app.Envelope{
-		Status: "OK",
-		Code:   200,
-		Data: map[string]interface{}{
-			"env":     h.app.Config.App.Env,
-			"version": h.app.Config.App.Version,
-		},
-	}
-
-	return c.JSON(http.StatusOK, res)
-}
-
-func (h *UserHandler) ForgetPasswordEnd(c echo.Context) error {
-	res := app.Envelope{
-		Status: "OK",
-		Code:   200,
-		Data: map[string]interface{}{
-			"env":     h.app.Config.App.Env,
-			"version": h.app.Config.App.Version,
-		},
-	}
-
-	return c.JSON(http.StatusOK, res)
-}
-
-func (h *UserHandler) ChangePassword(c echo.Context) error {
-	res := app.Envelope{
-		Status: "OK",
-		Code:   200,
-		Data: map[string]interface{}{
-			"env":     h.app.Config.App.Env,
-			"version": h.app.Config.App.Version,
-		},
-	}
-
-	return c.JSON(http.StatusOK, res)
+	return ectx.JSON(http.StatusOK, res)
 }

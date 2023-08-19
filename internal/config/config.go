@@ -21,7 +21,7 @@ type Config struct {
 	Nats       *nats.Config       `koanf:"nats"`
 	Db         *rdbms.Config      `koanf:"rdbms"`
 	Repository *repository.Config `koanf:"repository"`
-	Mailer     *mailer.Config     `koanf:"mailer"`
+	Mailer     *mailer.Config     `koanf:"mailer_templates"`
 	Jwt        *jwt.Config        `koanf:"jwt"`
 	Cookie     *cookie.Config     `koanf:"cookie"`
 	Encryption *encryption.Config `koanf:"encryption"`

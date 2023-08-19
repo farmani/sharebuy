@@ -11,10 +11,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/farmani/sharebuy/internal/repository"
+
 	"github.com/farmani/sharebuy/pkg/rdbms"
 
 	"github.com/farmani/sharebuy/internal/config"
-	"github.com/farmani/sharebuy/internal/data"
 	"github.com/farmani/sharebuy/pkg/mailer"
 	"github.com/labstack/echo/v4"
 	"github.com/nats-io/nats.go"
@@ -23,15 +24,15 @@ import (
 )
 
 type Application struct {
-	Config   *config.Config
-	Logger   *zap.Logger
-	Handlers []Handler
-	Models   data.Models
-	Mailer   mailer.Mailer
-	Wg       sync.WaitGroup
-	Db       rdbms.DB
-	Redis    *redis.Client
-	Nats     *nats.Conn
+	Config     *config.Config
+	Logger     *zap.Logger
+	Handlers   []Handler
+	Repository repository.Repository
+	Mailer     mailer.Mailer
+	Wg         sync.WaitGroup
+	Db         rdbms.DB
+	Redis      *redis.Client
+	Nats       *nats.Conn
 }
 
 func NewApiApplication(cfg *config.Config) *Application {
@@ -47,6 +48,9 @@ func (app *Application) Start() error {
 	if err != nil {
 		return err
 	}
+
+	app.Mailer = mailer.New(app.Config.Mailer)
+	app.Repository = repository.New(app.Logger, app.Config.Repository, app.Db)
 
 	e := echo.New()
 	e.Server.IdleTimeout = time.Minute

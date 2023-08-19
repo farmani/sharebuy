@@ -4,8 +4,14 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"encoding/base32"
 	"errors"
+	"golang.org/x/crypto/bcrypt"
 	"io"
+)
+
+var (
+	ErrInvalidLength = errors.New("invalid length")
 )
 
 type Encryption struct {
@@ -55,4 +61,41 @@ func (enc *Encryption) Decrypt(ciphered []byte) ([]byte, error) {
 
 	nonce, ciphered := ciphered[:nonceSize], ciphered[nonceSize:]
 	return gcm.Open(nil, nonce, ciphered, nil)
+}
+
+func (enc *Encryption) Hash(s string) ([]byte, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(s), 12)
+	if err != nil {
+		return nil, err
+	}
+
+	return hash, nil
+}
+
+func (enc *Encryption) HashMatch(s string, hashed []byte) (bool, error) {
+	err := bcrypt.CompareHashAndPassword(hashed, []byte(s))
+	if err != nil {
+		switch {
+		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
+			return false, nil
+		default:
+			return false, err
+		}
+	}
+
+	return true, nil
+}
+
+func GenerateRandomString(l int) (string, error) {
+	if l <= 0 || l > 64 {
+		return "", ErrInvalidLength
+	}
+
+	randomBytes := make([]byte, 64)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		return "", err
+	}
+
+	return base32.StdEncoding.EncodeToString(randomBytes)[:l], nil
 }

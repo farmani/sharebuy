@@ -21,20 +21,19 @@ type Config struct {
 		Verify   bool   `koanf:"nats.tls_config.verify"`
 		Timeout  string `koanf:"nats.tls_config.timeout"`
 	} `koanf:"nats.tls_config"`
-	TlsCertCB       interface{} `koanf:"nats.tls_cert_cb"`
-	RootCAsCB       interface{} `koanf:"nats.root_cas_cb"`
-	MaxReconnect    int         `koanf:"nats.max_reconnect"`
-	PingInterval    string      `koanf:"nats.ping_interval"`
-	inProcessServer bool        `koanf:"nats.in_process_server"`
-	MaxReconnects   int         `koanf:"nats.max_reconnects"`
-	ReconnectWait   int         `koanf:"nats.reconnect_wait"`
-	MaxPingsOut     int         `koanf:"nats.max_pings_out"`
-	AllowReconnect  bool        `koanf:"nats.allow_reconnect"`
-	Verbose         bool        `koanf:"nats.verbose"`
-	NoRandomize     bool        `koanf:"nats.no_randomize"`
-	NoEcho          bool        `koanf:"nats.no_echo"`
-	Name            string      `koanf:"nats.name"`
-	Compression     int         `koanf:"nats.compression"`
+	TlsCertCB           interface{} `koanf:"nats.tls_cert_cb"`
+	RootCAsCB           interface{} `koanf:"nats.root_cas_cb"`
+	PingInterval        string      `koanf:"nats.ping_interval"`
+	inProcessServer     bool        `koanf:"nats.in_process_server"`
+	MaxReconnects       int         `koanf:"nats.max_reconnects"`
+	ReconnectWait       string      `koanf:"nats.reconnect_wait"`
+	MaxPingsOutstanding int         `koanf:"nats.max_pings_outstanding"`
+	AllowReconnect      bool        `koanf:"nats.allow_reconnect"`
+	Verbose             bool        `koanf:"nats.verbose"`
+	NoRandomize         bool        `koanf:"nats.no_randomize"`
+	NoEcho              bool        `koanf:"nats.no_echo"`
+	Name                string      `koanf:"nats.name"`
+	Compression         bool        `koanf:"nats.compression"`
 
 	/*
 		Dialer         interface{} `koanf:"nats.dialer"`

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/farmani/sharebuy/internal/repository"
 	"os"
 
 	"github.com/farmani/sharebuy/cmd/api/app"
@@ -35,17 +34,17 @@ func (cmd Server) run(cfg *cfg.Config) {
 	field := zap.String("version", version)
 	zapLogger.Info("Starting API server", field)
 
-	apiApp := app.NewApiApplication(cfg)
-	repo := repository.New(zapLogger, cfg.Repository, apiApp.Db)
+	api := app.NewApiApplication(cfg)
 
 	// Add the handlers to the Application
-	apiApp.Handlers = []app.Handler{
-		handlers.NewSiteHandler(apiApp, services.NewSiteService(apiApp, repo)),
-		handlers.NewUserHandler(apiApp, services.NewUserService(apiApp, repo)),
+	api.Handlers = []app.Handler{
+		handlers.NewSiteHandler(api, services.NewSiteService(api)),
+		handlers.NewUserHandler(api, services.NewUserService(api)),
+		handlers.NewProductHandler(api, services.NewProductService(api)),
 		// Add other handlers here
 	}
 
-	if err := apiApp.Start(); err != nil {
+	if err := api.Start(); err != nil {
 		panic(err)
 	}
 }

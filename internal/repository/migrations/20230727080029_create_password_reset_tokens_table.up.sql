@@ -1,6 +1,0 @@
-CREATE TABLE IF NOT EXISTS password_reset_tokens(
-    id serial PRIMARY KEY,
-    email VARCHAR (300) UNIQUE NOT NULL,
-    token VARCHAR (50) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);

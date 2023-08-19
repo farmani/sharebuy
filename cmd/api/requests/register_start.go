@@ -1,20 +1,14 @@
 package requests
 
 import (
-	"errors"
-
 	"github.com/farmani/sharebuy/pkg/validator"
 	"github.com/labstack/echo/v4"
 )
 
-var (
-	ErrBadRequest       = errors.New("bad request error")
-	ErrFailedValidation = errors.New("failed validation error")
-)
-
 type RegisterStartRequest struct {
-	Email    string `json:"email" xml:"email" form:"email" validate:"required,email_dns"`
-	Password string `json:"password" xml:"password" form:"password" validate:"required"`
+	Email      string `json:"email" xml:"email" form:"email" validate:"required,email"`
+	Password   string `json:"password" xml:"password" form:"password" validate:"required"`
+	SuccessUrl string `json:"success_url" xml:"success_url" form:"success_url" validate:"required"`
 }
 
 func NewRegisterStartRequest(c echo.Context, v *validator.Validator) (*RegisterStartRequest, error) {

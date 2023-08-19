@@ -13,11 +13,16 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+var (
+	ErrBadRequest       = errors.New("bad request error")
+	ErrFailedValidation = errors.New("failed validation error")
+)
+
 type Requests interface {
 	Validate(e *echo.Echo)
 }
 
-// readIDParam reads interpolated "id" from request URL and returns it and nil. If there is an error
+// ReadIDParam reads interpolated "id" from request URL and returns it and nil. If there is an error
 // it returns and 0 and an error.
 func ReadIDParam(c echo.Context) (int64, error) {
 	// Parse the id param from the URL
@@ -29,7 +34,7 @@ func ReadIDParam(c echo.Context) (int64, error) {
 	return id, nil
 }
 
-// readJSON decodes request Body into corresponding Go type. It triages for any potential errors
+// ReadJSON decodes request Body into corresponding Go type. It triages for any potential errors
 // and returns corresponding appropriate errors.
 func ReadJSON(c echo.Context, dst interface{}) error {
 	// Initialize the json.Decoder, and call the DisallowUnknownFields() method on it
@@ -120,7 +125,7 @@ func ReadJSON(c echo.Context, dst interface{}) error {
 	return nil
 }
 
-// readString is a helper method on Application type that returns a string value from the URL query
+// ReadStrings is a helper method on Application type that returns a string value from the URL query
 // string, or the provided default value if no matching key is found.
 func ReadStrings(qs url.Values, key string, defaultValue string) string {
 	// Extract the value for a given key from the URL query string.
@@ -136,7 +141,7 @@ func ReadStrings(qs url.Values, key string, defaultValue string) string {
 	return s
 }
 
-// readCSV is a helper method on Application type that reads a string value from the URL query
+// ReadCSV is a helper method on Application type that reads a string value from the URL query
 // string and then splits it into a slice on the comma character. If no matching key is found
 // then it returns the provided default value.
 func ReadCSV(qs url.Values, key string, defaultValue []string) []string {
@@ -152,7 +157,7 @@ func ReadCSV(qs url.Values, key string, defaultValue []string) []string {
 	return strings.Split(csv, ",")
 }
 
-// readInt is a helper method on Application type that reads a string value from the URL query
+// ReadInt is a helper method on Application type that reads a string value from the URL query
 // string and converts it to an integer before returning. If no matching key is found then it
 // returns the provided default value. If the value couldn't be converted to an integer, then we
 // record an error message in the provided Validator instance, and return the default value.

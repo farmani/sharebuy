@@ -1,9 +1,10 @@
 package config
 
 import (
-	"github.com/farmani/sharebuy/internal/repository"
 	"net/http"
 	"time"
+
+	"github.com/farmani/sharebuy/internal/repository"
 
 	"github.com/farmani/sharebuy/pkg/cookie"
 	"github.com/farmani/sharebuy/pkg/encryption"
@@ -52,29 +53,29 @@ MCowBQYDK2VwAyEA1JsMvBD61BAYv8+JZtvex1K7Y1CgYeNnO9WMhgxNrv8=
 			Db:       0,
 		},
 		Nats: &ncfg.Config{
-			Url:            nats.DefaultURL,
-			Servers:        []string{},
-			Nkey:           "",
-			UserJWT:        "",
-			User:           "",
-			Password:       "",
-			Timeout:        "5s",
-			DrainTimeout:   "30s",
-			FlusherTimeout: "5s",
-			MaxReconnects:  5,
-			ReconnectWait:  5,
-			PingInterval:   "5s",
-			Token:          "",
-			TokenHandler:   "",
-			Pedantic:       false,
-			Secure:         false,
-			MaxPingsOut:    2,
-			AllowReconnect: true,
-			Verbose:        false,
-			NoRandomize:    false,
-			NoEcho:         false,
-			Name:           "",
-			Compression:    0,
+			Url:                 nats.DefaultURL,
+			Servers:             []string{},
+			Nkey:                "",
+			UserJWT:             "",
+			User:                "",
+			Password:            "",
+			Timeout:             "5s",
+			DrainTimeout:        "30s",
+			FlusherTimeout:      "5s",
+			ReconnectWait:       "5s",
+			PingInterval:        "5s",
+			MaxReconnects:       5,
+			Token:               "",
+			TokenHandler:        "",
+			Pedantic:            false,
+			Secure:              false,
+			MaxPingsOutstanding: 2,
+			AllowReconnect:      true,
+			Verbose:             false,
+			NoRandomize:         false,
+			NoEcho:              false,
+			Name:                "",
+			Compression:         true,
 		},
 		Db: &rdbms.Config{
 			Dsn:          "postgres://sharebuy-user:sharebuy-pass@localhost:5432/sharebuy?sslmode=disable",
@@ -83,16 +84,18 @@ MCowBQYDK2VwAyEA1JsMvBD61BAYv8+JZtvex1K7Y1CgYeNnO9WMhgxNrv8=
 			Username:     "sharebuy-user",
 			Password:     "sharebuy-pass",
 			Database:     "sharebuy",
-			MaxOpenConns: 10,
-			MaxIdleConns: 5,
-			MaxIdleTime:  "5m",
+			MaxOpenConns: 64,
+			MaxIdleConns: 64,
+			MaxIdleTime:  "15m",
 		},
 		Repository: &repository.Config{},
 		Mailer: &mailer.Config{
-			Host:     "smtp.mailtrap.io",
-			Port:     2525,
-			Username: "info",
-			Password: "info",
+			Host:         "smtp.mailtrap.io",
+			Port:         2525,
+			Username:     "info",
+			Password:     "info",
+			ResendAPIKey: "re_KV12BrjV_56WDs6qW17AqAhAeEXh4o9ZB",
+			Sender:       "noreply@mail.sharebuy.bid",
 		},
 		Logger: &logger.Config{
 			Level:    "debug",
